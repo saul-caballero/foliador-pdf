@@ -25,4 +25,8 @@ if __name__ == "__main__":
     print(f" http://<tu-ip>:{PORT}")
     print("\n Presiona Ctrl+C para detener el servidor.\n")
 
-    serve(app, host=HOST, port=PORT)
+# Desarrollo Local (test)
+# app.run(host="localhost", port=PORT, debug=True)
+
+# Producción
+serve(app, host=HOST, port=PORT)
