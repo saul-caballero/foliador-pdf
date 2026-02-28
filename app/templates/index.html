@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash--{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <header class="header">
+        <h1 class="header__title">Foliador PDF</h1>
+        <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
+    </header>
+
+    <main class="main">
+
+        <section id="screen-upload" class="screen screen--active">
+            <label id="dropzone" for="pdf-drag-input" class="dropzone">
+                <span class="dropzone__icon">📁</span>
+                <span class="dropzone__text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
+                <span class="dropzone__hint">Máximo 2 GB</span>
+                <input type="file" id="pdf-drag-input" accept="application/pdf" hidden>
+            </label>
+        </section>
+
+        <section id="screen-config" class="screen" hidden>
+            <div class="workspace">
+
+                <form
+                    id="folio-form"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    action="{{ url_for('main.index') }}"
+                    class="form-panel"
+                >
+                    <input type="file" id="pdf-file-input" name="pdf_file" accept="application/pdf" hidden>
+
+                    <div class="form-panel__section">
+                        <h2 class="section-title">1. Configuración</h2>
+
+                        <div class="field">
+                            <label class="field__label" for="start_number">Número de folio inicial</label>
+                            <input class="field__input" type="number" id="start_number" name="start_number" value="1" min="1" required>
+                            <span class="field__hint">Formato 4 dígitos - ej: 1 - 0001</span>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label class="field__label" for="start_page">Página inicial</label>
+                                <input class="field__input" type="number" id="start_page" name="start_page" value="1" min="1">
+                                <span class="field__hint">1 para foliar desde el inicio</span>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="end_page">Página final</label>
+                                <input class="field__input" type="number" id="end_page" name="end_page" placeholder="Hasta el final">
+                                <span class="field__hint">Vacío = hasta la última página</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-panel__section">
+                        <h2 class="section-title">2. Estilo y posición</h2>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label class="field__label" for="font_size">Tamaño de fuente</label>
+                                <input class="field__input" type="number" id="font_size" name="font_size" value="14" min="8" max="72">
+                                <span class="field__hint">8 a 72 puntos</span>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="offset">Margen lateral (cm)</label>
+                                <input class="field__input" type="number" id="offset" name="offset" value="1.0" min="0.5" max="5.0" step="0.1">
+                                <span class="field__hint">0.5 a 5.0 cm</span>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field">
+                                <label class="field__label" for="corner">Esquina</label>
+                                <select class="field__input" id="corner" name="corner">
+                                    <option value="bottom-right" selected>Abajo derecha</option>
+                                    <option value="bottom-left">Abajo izquierda</option>
+                                    <option value="top-right">Arriba derecha</option>
+                                    <option value="top-left">Arriba izquierda</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="orientation">Orientación</label>
+                                <select class="field__input" id="orientation" name="orientation">
+                                    <option value="horizontal" selected>Horizontal</option>
+                                    <option value="vertical">Vertical</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn btn--primary" disabled>
+                        Foliar y Descargar PDF
+                    </button>
+                </form>
+
+                <div class="preview-panel">
+                    <h2 class="section-title">3. Vista previa</h2>
+
+                    {% if not pdf_preview_available %}
+                    <div class="alert alert--warning">
+                        Vista previa deshabilitada (Poppler no disponible).
+                    </div>
+                    {% endif %}
+
+                    <div class="preview-panel__folio-tag">
+                        Folio que se aplicará: <strong id="folio-display">#0001</strong>
+                    </div>
+
+                    <div class="preview-panel__canvas" id="preview-container">
+                        <p id="preview-message" class="preview-panel__message">
+                            Sube un PDF para ver la vista previa de la primera página.
+                        </p>
+                        <img id="preview-image" class="preview-panel__image" src="" alt="Vista previa" hidden>
+                    </div>
+
+                    <p class="preview-panel__note">
+                        La imagen es de baja resolución solo para verificar posición. El PDF final conserva la calidad original.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 Foliador PDF · Servyre</p>
+    </footer>
+
+    <div id="loading-modal" class="modal" hidden>
+        <div class="modal__box">
+            <h3 class="modal__title">Procesando archivo…</h3>
+            <p class="modal__body">Por favor espera. Los archivos grandes pueden tardar varios segundos.</p>
+            <div class="progress">
+                <div id="progress-bar" class="progress__bar"></div>
+                <span id="progress-text" class="progress__text">0%</span>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}
