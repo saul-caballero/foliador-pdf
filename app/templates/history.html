@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Historial — Foliador PDF{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div class="header__content">
+        <div>
+            <h1 class="header__title">Foliador PDF - Servyre</h1>
+            <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
+        </div>
+        <a href="/" class="header__link">Ir al Foliador</a>
+    </div>
+</header>
+
+<main class="main">
+    <div class="history">
+
+        <div class="history__header">
+            <h2 class="history__title">Historial de operaciones</h2>
+            <span class="history__count">{{ entries|length }} registros</span>
+        </div>
+
+        {% if entries %}
+        <table class="history__table">
+            <thead>
+                <tr>
+                    <th>Fecha y hora</th>
+                    <th>Estado</th>
+                    <th>Folios</th>
+                    <th>Paginas</th>
+                    <th>Archivo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td class="history__date">{{ entry.date }}</td>
+                    <td>
+                        <span class="history__status history__status--{{ entry.status | lower }}">
+                            {{ entry.status }}
+                        </span>
+                    </td>
+                    <td class="history__folios">{{ entry.folios }}</td>
+                    <td class="history__pages">{{ entry.pages }}</td>
+                    <td class="history__filename">{{ entry.filename }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="history__empty">
+            <p>No hay operaciones registradas todavia.</p>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+<footer class="footer">
+    <p>© 2026 Foliador PDF · Servyre · Dudas o Sugerencias: <a
+            href="mailto:saul.caballero@servyre.com">saul.caballero@servyre.com</a></p>
+</footer>
+{% endblock %}

@@ -92,6 +92,7 @@ def index():
                 output_path=temp_out,
                 preview_mode=False,
                 log_folder=current_app.config["LOGS_FOLDER"],
+                filename=safe_name,
                 **params,
             )
 
@@ -167,6 +168,30 @@ def preview():
 @main.route("/instructions")
 def instructions():
     return render_template("instructions.html")
+
+@main.route("/history")
+def history():
+    log_path = os.path.join(current_app.config["LOGS_FOLDER"], "folios.txt")
+    entries = []
+
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        
+        for line in reversed(lines):
+            line = line.strip()
+            if line:
+                parts = line.split(" | ")
+                if len(parts) >= 4:
+                    entries.append({
+                        "date":     parts[0],
+                        "status":   parts[1],
+                        "folios":   parts[2],
+                        "pages":    parts[3],
+                        "filename": parts[5].replace("File: ", "") if len(parts) >= 6 else "—",
+                    })
+
+    return render_template("history.html", entries=entries)
 
 
 # Error 

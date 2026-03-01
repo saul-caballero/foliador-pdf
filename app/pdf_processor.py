@@ -16,10 +16,11 @@ def _log(folder, level, message):
         f.write(entry)
 
 
-def log_success(folder, start_number, pages, corner):
+def log_success(folder, start_number, pages, corner, filename=""):
     end_number = start_number + pages - 1
+    filename_str = f" | File: {filename}" if filename else ""
     _log(folder, "SUCCESS",
-         f"Folios: {start_number:04} to {end_number:04} | Pages: {pages} | Corner: {corner}")
+         f"Folios: {start_number:04} to {end_number:04} | Pages: {pages} | Corner: {corner}{filename_str}")
 
 
 def log_error(folder, message, detail=""):
@@ -62,7 +63,7 @@ def _create_folio_overlay(page_width, page_height, folio_text,
 def add_folios(input_path, output_path, log_folder,
                font="Courier-Bold", font_size=14, start_number=1,
                offset_cm=1.0, corner="bottom-right", orientation="horizontal",
-               start_page=1, end_page=None, preview_mode=False):
+               start_page=1, end_page=None, preview_mode=False, filename=""):
 
     try:
         reader = PdfReader(input_path)
@@ -108,7 +109,7 @@ def add_folios(input_path, output_path, log_folder,
             writer.write(f)
 
         if not preview_mode:
-            log_success(log_folder, start_number, count, corner)
+            log_success(log_folder, start_number, count, corner, filename)
 
         return True
 
