@@ -60,7 +60,19 @@ def index():
         file = request.files.get("pdf_file")
 
         if not file or file.filename == "":
-            flash("No file was selected.", "error")
+            flash("No se seleccionó ningún archivo.", "error")
+            return redirect(url_for("main.index"))
+
+        if not file.filename.lower().endswith(".pdf"):
+            flash("El archivo debe ser un PDF.", "error")
+            return redirect(url_for("main.index"))
+        
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size == 0:
+            flash("El archivo está vacío.", "error")
             return redirect(url_for("main.index"))
 
         try:

@@ -1,3 +1,13 @@
+console.log(`
+%cFOLIADOR PDF WEB
+%cDesarrollado por Saúl Caballero🛡️
+%c© 2026 Servyre
+`,
+'color:#c8a020; font-size:18px; font-weight:bold;',
+'color:#555; font-size:13px;',
+'color:#aaa; font-size:11px;'
+);
+
 document.addEventListener("DOMContentLoaded", () => {
 
     const screenUpload  = document.getElementById("screen-upload");
