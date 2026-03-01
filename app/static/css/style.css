@@ -426,3 +426,32 @@ body {
     color: var(--color-text-muted);
     font-family: var(--font-mono);
 }
+
+/* File info */
+.file-info {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+}
+
+.file-info__name {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60%;
+}
+
+.file-info__meta {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+}

@@ -54,27 +54,52 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     }
 
-    function loadFile(fileList) {
-        if (!fileList || fileList.length === 0) return;
-        const file = fileList[0];
-        if (!validateFile(file)) return;
+    function getPageCount(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const arr = new Uint8Array(e.target.result);
+            const text = new TextDecoder("latin1").decode(arr);
+            const matches = text.match(/\/Type\s*\/Page[^s]/g);
+            resolve(matches ? matches.length : "?");
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
 
-        dropzone.classList.add("dropzone--loaded");
-        dropzone.querySelector(".dropzone__text").textContent = "Cargando archivo...";
+    async function loadFile(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!validateFile(file)) return;
 
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
+    dropzone.classList.add("dropzone--loaded");
+    dropzone.querySelector(".dropzone__text").textContent = "Cargar nuevo archivo";
 
-        updateSubmitState();
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fileInput.files = dt.files;
 
-        setTimeout(() => {
-            screenUpload.hidden = true;
-            screenConfig.hidden = false;
-            dropzone.classList.remove("dropzone--loaded");
-            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-        }, 500);
-    }
+    updateSubmitState();
+
+    const pages = await getPageCount(file);
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+    setTimeout(() => {
+        screenUpload.hidden = true;
+        screenConfig.hidden = false;
+        dropzone.classList.remove("dropzone--loaded");
+
+        const fileInfo = document.getElementById("file-info");
+        if (fileInfo) {
+            fileInfo.innerHTML = `
+                <span class="file-info__name">Archivo: ${file.name}</span>
+                <span class="file-info__meta">${pages} páginas &nbsp;·&nbsp; ${sizeMB} MB</span>
+            `;
+        }
+
+        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }, 500);
+}
 
     // ── Preview ──
 
