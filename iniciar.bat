@@ -34,4 +34,6 @@ echo.
 
 python run.py
 
-pause
+echo.
+echo  Servidor detenido.
+pause >nul

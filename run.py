@@ -1,4 +1,7 @@
-""" Inicia el servidor Waitress y abre el navegador automáticamente. """
+""" Inicia el servidor Waitress y abre el navegador automáticamente """
+
+import sys
+import os
 import webbrowser
 import threading
 from waitress import serve
@@ -9,24 +12,27 @@ PORT = 5000
 URL = f"http://localhost:{PORT}"
 
 
+def get_base_path():
+    """ Devuelve la ruta base independientemente de que se ejecute como .exe o como script """
+    if getattr(sys, "frozen", False):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 def open_browser():
-    """Abre el navegador después de un breve retraso para permitir que el servidor se inicie."""
     webbrowser.open(URL)
 
 
 if __name__ == "__main__":
-    app = create_app()
+    base_path = get_base_path()
+
+    app = create_app(base_path)
 
     timer = threading.Timer(1.5, open_browser)
     timer.start()
 
-    print(f"\nFoliador PDF corriendo en {URL}")
-    print(f" Comparte esta dirección en tu red local:")
-    print(f" http://<tu-ip>:{PORT}")
-    print("\n Presiona Ctrl+C para detener el servidor.\n")
+    print(f"\n Foliador PDF corriendo en {URL}")
+    print(f"   Comparte en red local: http://<tu-ip>:{PORT}")
+    print("\n   Presiona Ctrl+C para detener.\n")
 
-# Desarrollo Local (test)
-# app.run(host="localhost", port=PORT, debug=True)
-
-# Producción
-serve(app, host=HOST, port=PORT)
+    serve(app, host=HOST, port=PORT)
