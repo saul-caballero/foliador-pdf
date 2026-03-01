@@ -152,6 +152,11 @@ def preview():
         return f"Preview error: {str(e)}", 500
 
 
+@main.route("/instructions")
+def instructions():
+    return render_template("instructions.html")
+
+
 # Error 
 @main.app_errorhandler(404)
 def page_not_found(e):

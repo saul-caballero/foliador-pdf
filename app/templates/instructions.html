@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Instrucciones — Foliador PDF{% endblock %}
+
+{% block content %}
+<header class="header">
+    <h1 class="header__title">Foliador PDF</h1>
+    <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
+</header>
+
+<main class="main">
+    <div class="instructions">
+
+        <div class="instructions__header">
+            <h2 class="instructions__title">¿Cómo usar el Foliador PDF?</h2>
+            <a href="/" class="btn btn--primary">Ir al Foliador</a>
+        </div>
+
+        <div class="instructions__grid">
+
+            <div class="step-card">
+                <span class="step-card__number">01</span>
+                <h3 class="step-card__title">Carga tu PDF</h3>
+                <p class="step-card__body">
+                    Arrastra tu archivo PDF a la zona de carga o haz clic para seleccionarlo.
+                    El archivo puede pesar hasta 2 GB.
+                </p>
+            </div>
+
+            <div class="step-card">
+                <span class="step-card__number">02</span>
+                <h3 class="step-card__title">Configura el foliado</h3>
+                <p class="step-card__body">
+                    Define el número de folio inicial, el rango de páginas a foliar
+                    y la esquina donde aparecerá el número.
+                </p>
+            </div>
+
+            <div class="step-card">
+                <span class="step-card__number">03</span>
+                <h3 class="step-card__title">Verifica la vista previa</h3>
+                <p class="step-card__body">
+                    La vista previa muestra la primera página foliada.
+                    Ajusta la posición y tamaño hasta que quede correcto.
+                </p>
+            </div>
+
+            <div class="step-card">
+                <span class="step-card__number">04</span>
+                <h3 class="step-card__title">Descarga el resultado</h3>
+                <p class="step-card__body">
+                    Haz clic en "Foliar y Descargar PDF". El archivo se descarga
+                    automáticamente con el nombre Foliado_tunombre.pdf.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="instructions__notes">
+            <h3 class="instructions__notes-title">Notas importantes</h3>
+            <ul class="instructions__list">
+                <li>El folio se formatea siempre a 4 dígitos - ejemplo: 1 - 0001</li>
+                <li>Puedes foliar solo un rango de páginas dejando el resto sin número</li>
+                <li>La vista previa tiene un límite de 30 MB para proteger el servidor</li>
+                <li>El PDF original no se modifica, siempre se genera un archivo nuevo</li>
+                <li>No se aceptan PDFs con contraseña</li>
+            </ul>
+        </div>
+
+    </div>
+</main>
+
+<footer class="footer">
+    <p>© 2026 Foliador PDF</p>
+</footer>
+{% endblock %}
