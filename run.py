@@ -14,13 +14,20 @@ URL  = f"http://localhost:{PORT}"
 
 
 def get_base_path():
+    # Devolver la ruta a los activos agrupados (templates, static)
     if getattr(sys, "frozen", False):
         return sys._MEIPASS
     return os.path.dirname(os.path.abspath(__file__))
 
+def get_exe_path():
+    # Devolver la carpeta donde se encuentra el .exe
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+    
 
 def get_local_ip():
-    """Returns the local network IP of this machine."""
+    # Devolver la IP de la red local de la PC.
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -32,13 +39,13 @@ def get_local_ip():
 
 
 def is_port_in_use(port):
-    """ Comprobar si un puerto ya está en uso """
+    # Comprobar si un puerto ya está en uso 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
 
 
 def cleanup_temp_files(temp_folder):
-    """Deletes all temporary PDF files on server shutdown."""
+    # Eliminar todos los archivos PDF temporales al apagar el servidor
     try:
         if os.path.exists(temp_folder):
             for filename in os.listdir(temp_folder):
@@ -64,10 +71,13 @@ if __name__ == "__main__":
         sys.exit(0)
 
     base_path = get_base_path()
+    exe_path  = get_exe_path()
+    # Pasar exe_path via variable de entorno
+    os.environ["EXE_PATH"] = exe_path
+    
     app = create_app(base_path)
 
     local_ip = get_local_ip()
-
     # Limpiar el registro al salir
     temp_folder = os.path.join(base_path, "temp_files")
     atexit.register(cleanup_temp_files, temp_folder)
