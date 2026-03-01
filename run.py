@@ -2,6 +2,7 @@
 import sys
 import os
 import socket
+import atexit
 import webbrowser
 import threading
 from waitress import serve
@@ -19,7 +20,7 @@ def get_base_path():
 
 
 def get_local_ip():
-    """ Devuelve la ruta base independientemente de que se ejecute como .exe o como script """
+    """Returns the local network IP of this machine."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -34,6 +35,19 @@ def is_port_in_use(port):
     """ Comprobar si un puerto ya está en uso """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
+
+
+def cleanup_temp_files(temp_folder):
+    """Deletes all temporary PDF files on server shutdown."""
+    try:
+        if os.path.exists(temp_folder):
+            for filename in os.listdir(temp_folder):
+                if filename.endswith(".pdf"):
+                    file_path = os.path.join(temp_folder, filename)
+                    os.remove(file_path)
+            print("\n Archivos temporales eliminados.")
+    except Exception as e:
+        print(f"\n No se pudieron eliminar archivos temporales: {e}")
 
 
 def open_browser():
@@ -53,6 +67,10 @@ if __name__ == "__main__":
     app = create_app(base_path)
 
     local_ip = get_local_ip()
+
+    # Limpiar el registro al salir
+    temp_folder = os.path.join(base_path, "temp_files")
+    atexit.register(cleanup_temp_files, temp_folder)
 
     timer = threading.Timer(1.5, open_browser)
     timer.start()
