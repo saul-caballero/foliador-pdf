@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Error del servidor — Foliador PDF{% endblock %}
+
+{% block content %}
+<header class="header">
+    <h1 class="header__title">Foliador PDF</h1>
+    <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
+</header>
+
+<main class="main">
+    <div class="error-page">
+        <span class="error-page__code">500</span>
+        <h2 class="error-page__title">Error interno del servidor</h2>
+        <p class="error-page__body">Algo salio mal al procesar tu solicitud. Intenta de nuevo.</p>
+        <a href="/" class="btn btn--primary">Volver al inicio</a>
+    </div>
+</main>
+{% endblock %}

@@ -19,8 +19,7 @@
 
         <section id="screen-upload" class="screen screen--active">
             <label id="dropzone" for="pdf-drag-input" class="dropzone">
-                <span class="dropzone__icon">📁</span>
-                <span class="dropzone__text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
+                <img src="{{ url_for('static', filename='img/pdf.png') }}" class="dropzone__icon" alt="PDF"><span class="dropzone__text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
                 <span class="dropzone__hint">Máximo 2 GB</span>
                 <input type="file" id="pdf-drag-input" accept="application/pdf" hidden>
             </label>
@@ -133,7 +132,7 @@
     </main>
 
     <footer class="footer">
-        <p>© 2026 Foliador PDF · Servyre · Saul Caballero</p>
+        <p>© 2026 Foliador PDF · Servyre · Dudas o Sugerencias: <a href="mailto:saul.caballero@servyre.com">saul.caballero@servyre.com</a></p>
     </footer>
 
     <div id="loading-modal" class="modal" hidden>
