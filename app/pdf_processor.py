@@ -1,4 +1,3 @@
-"""Core PDF folio logic."""
 import os
 from io import BytesIO
 from datetime import datetime
@@ -49,9 +48,11 @@ def _create_folio_overlay(page_width, page_height, folio_text,
         y = page_height - margin - font_size
 
     if orientation == "vertical":
+        c.saveState()
         c.translate(x, y)
         c.rotate(90)
         c.drawString(0, 0, folio_text)
+        c.restoreState()
     else:
         draw(x, y, folio_text)
 
@@ -92,6 +93,10 @@ def add_folios(input_path, output_path, log_folder,
         current_number = start_number
         for page in pages_to_folio:
             folio_text = f"{current_number:04}"
+
+            # Normalizar rotacion para coordenadas predecibles
+            page.transfer_rotation_to_content()
+
             width  = float(page.mediabox.width)
             height = float(page.mediabox.height)
 
@@ -114,6 +119,9 @@ def add_folios(input_path, output_path, log_folder,
         return True
 
     except Exception as e:
-        log_error(log_folder, "Failed to process PDF", str(e))
+        try:
+            log_error(log_folder, "Failed to process PDF", str(e))
+        except Exception:
+            pass
         print(f"[ERROR] add_folios: {e}")
         return False
