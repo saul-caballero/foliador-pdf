@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const previewMessage   = document.getElementById("preview-message");
     const previewImage     = document.getElementById("preview-image");
+    const fileInfo         = document.getElementById("file-info");
+    const fileList         = document.getElementById("file-list");
 
     const loadingModal  = document.getElementById("loading-modal");
     const progressBar   = document.getElementById("progress-bar");
@@ -38,7 +40,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const PREVIEW_DELAY  = 750;
     let previewTimer = null;
 
-    // ── Utilities ──
+    // Lista de archivos cargados para modo múltiple
+    let loadedFiles = [];
+
+    // Utilities
 
     function updateFolioDisplay() {
         const n = parseInt(startNumberInput.value) || 1;
@@ -46,9 +51,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateSubmitState() {
-        const valid = fileInput.files.length > 0
-                   && fileInput.files[0].size <= MAX_FILE_BYTES;
+        const valid = loadedFiles.length > 0;
         submitBtn.disabled = !valid;
+
+        if (loadedFiles.length > 1) {
+            submitBtn.textContent = `Foliar y Descargar ZIP (${loadedFiles.length} archivos)`;
+        } else if (loadedFiles.length === 1) {
+            submitBtn.textContent = "Foliar y Descargar PDF";
+        } else {
+            submitBtn.textContent = "Foliar y Descargar";
+        }
     }
 
     function validateFile(file) {
@@ -65,53 +77,97 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getPageCount(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const arr = new Uint8Array(e.target.result);
-            const text = new TextDecoder("latin1").decode(arr);
-            const matches = text.match(/\/Type\s*\/Page[^s]/g);
-            resolve(matches ? matches.length : "?");
-        };
-        reader.readAsArrayBuffer(file);
-    });
-}
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const arr = new Uint8Array(e.target.result);
+                const text = new TextDecoder("latin1").decode(arr);
+                const matches = text.match(/\/Type\s*\/Page[^s]/g);
+                resolve(matches ? matches.length : "?");
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
 
-    async function loadFile(fileList) {
-    if (!fileList || fileList.length === 0) return;
-    const file = fileList[0];
-    if (!validateFile(file)) return;
-
-    dropzone.classList.add("dropzone--loaded");
-    dropzone.querySelector(".dropzone__text").textContent = "Cargar nuevo archivo";
-
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    fileInput.files = dt.files;
-
-    updateSubmitState();
-
-    const pages = await getPageCount(file);
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-    setTimeout(() => {
-        screenUpload.hidden = true;
-        screenConfig.hidden = false;
-        dropzone.classList.remove("dropzone--loaded");
-
-        const fileInfo = document.getElementById("file-info");
-        if (fileInfo) {
-            fileInfo.innerHTML = `
-                <span class="file-info__name">Archivo: ${file.name}</span>
-                <span class="file-info__meta">${pages} páginas &nbsp;·&nbsp; ${sizeMB} MB</span>
-            `;
+    function renderFileList() {
+        if (loadedFiles.length === 0) {
+            fileList.hidden = true;
+            fileInfo.innerHTML = "";
+            return;
         }
 
-        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
-    }, 500);
-}
+        fileList.hidden = false;
+        fileList.innerHTML = loadedFiles.map((f, i) => `
+            <div class="file-list__item" data-index="${i}">
+                <span class="file-list__name">${f.name}</span>
+                <span class="file-list__meta">${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
+                <button type="button" class="file-list__remove" data-index="${i}">✕</button>
+            </div>
+        `).join("");
 
-    // ── Preview ──
+        // Listeners para quitar archivos
+        fileList.querySelectorAll(".file-list__remove").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const idx = parseInt(btn.dataset.index);
+                loadedFiles.splice(idx, 1);
+                renderFileList();
+                updateSubmitState();
+
+                // Si queda 1 archivo actualizar preview con ese
+                if (loadedFiles.length === 1) {
+                    syncFileInput(loadedFiles[0]);
+                    requestPreview();
+                }
+
+                // Si no quedan archivos volver a pantalla inicial
+                if (loadedFiles.length === 0) {
+                    screenUpload.hidden = false;
+                    screenConfig.hidden = true;
+                }
+            });
+        });
+
+        // Info general
+        const total = loadedFiles.reduce((acc, f) => acc + f.size, 0);
+        fileInfo.innerHTML = `
+            <span class="file-info__name">${loadedFiles.length} archivo${loadedFiles.length > 1 ? "s" : ""} cargado${loadedFiles.length > 1 ? "s" : ""}</span>
+            <span class="file-info__meta">${(total / (1024 * 1024)).toFixed(2)} MB total</span>
+        `;
+    }
+
+    function syncFileInput(file) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+    }
+
+    async function loadFiles(fileListInput) {
+        if (!fileListInput || fileListInput.length === 0) return;
+
+        const newFiles = Array.from(fileListInput).filter(validateFile);
+        if (newFiles.length === 0) return;
+
+        // Agregar a la lista sin duplicados por nombre
+        newFiles.forEach(f => {
+            if (!loadedFiles.find(existing => existing.name === f.name)) {
+                loadedFiles.push(f);
+            }
+        });
+
+        renderFileList();
+        updateSubmitState();
+
+        // Preview siempre del primer archivo
+        syncFileInput(loadedFiles[0]);
+
+        setTimeout(() => {
+            screenUpload.hidden = true;
+            screenConfig.hidden = false;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        }, 300);
+    }
+
+    // Preview
 
     function requestPreview() {
         if (!fileInput.files.length) return;
@@ -148,77 +204,136 @@ document.addEventListener("DOMContentLoaded", () => {
         }, PREVIEW_DELAY);
     }
 
-    // ── Upload ──
+    // Upload
 
     function handleSubmit(event) {
         event.preventDefault();
-        if (!validateFile(fileInput.files[0])) return;
+        if (loadedFiles.length === 0) return;
 
         loadingModal.hidden = false;
         progressBar.style.width = "0%";
         progressText.textContent = "0%";
 
-        const xhr = new XMLHttpRequest();
+        const formData = new FormData(form);
 
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100);
-                progressBar.style.width = `${pct}%`;
-                progressText.textContent = `${pct}%`;
-            }
-        };
+        if (loadedFiles.length === 1) {
+            // Modo single: ruta original
+            formData.set("pdf_file", loadedFiles[0]);
 
-        xhr.onload = () => {
-            loadingModal.hidden = true;
-            if (xhr.status === 200) {
-                const disposition = xhr.getResponseHeader("Content-Disposition") || "";
-                const match = disposition.match(/filename="?([^";]+)"?/);
-                const filename = match ? match[1].replace(/['"]/g, "") : "foliado.pdf";
+            const xhr = new XMLHttpRequest();
 
-                const blob = new Blob([xhr.response], { type: "application/pdf" });
-                const url  = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    progressText.textContent = `${pct}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                loadingModal.hidden = true;
+                if (xhr.status === 200) {
+                    const disposition = xhr.getResponseHeader("Content-Disposition") || "";
+                    const match = disposition.match(/filename="?([^";]+)"?/);
+                    const filename = match ? match[1].replace(/['"]/g, "") : "foliado.pdf";
+
+                    const blob = new Blob([xhr.response], { type: "application/pdf" });
+                    const url  = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    window.location.reload();
+                } else {
+                    alert(`Error ${xhr.status} al procesar el archivo.`);
+                    window.location.reload();
+                }
+            };
+
+            xhr.onerror = () => {
+                loadingModal.hidden = true;
+                alert("Error de red.");
                 window.location.reload();
-            } else {
-                alert(`Error ${xhr.status} al procesar el archivo.`);
+            };
+
+            xhr.open("POST", form.action);
+            xhr.responseType = "arraybuffer";
+            xhr.send(formData);
+
+        } else {
+            // Modo múltiple: ruta /foliar-multiple
+            const multiFormData = new FormData();
+
+            // Agregar parámetros del formulario
+            controls.forEach(ctrl => {
+                multiFormData.append(ctrl.name, ctrl.value);
+            });
+
+            // Agregar todos los archivos
+            loadedFiles.forEach(f => {
+                multiFormData.append("pdf_files", f);
+            });
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    progressText.textContent = `${pct}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                loadingModal.hidden = true;
+                if (xhr.status === 200) {
+                    const blob = new Blob([xhr.response], { type: "application/zip" });
+                    const url  = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "Foliados.zip";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    window.location.reload();
+                } else {
+                    alert(`Error ${xhr.status} al procesar los archivos.`);
+                    window.location.reload();
+                }
+            };
+
+            xhr.onerror = () => {
+                loadingModal.hidden = true;
+                alert("Error de red.");
                 window.location.reload();
-            }
-        };
+            };
 
-        xhr.onerror = () => {
-            loadingModal.hidden = true;
-            alert("Error de red.");
-            window.location.reload();
-        };
-
-        xhr.open("POST", form.action);
-        xhr.responseType = "arraybuffer";
-        xhr.send(new FormData(form));
+            xhr.open("POST", "/foliar-multiple");
+            xhr.responseType = "arraybuffer";
+            xhr.send(multiFormData);
+        }
     }
 
-    // ── Events ──
+    // Events
 
     dropzone.addEventListener("dragover",  (e) => { e.preventDefault(); dropzone.classList.add("dropzone--highlight"); });
     dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("dropzone--highlight"); });
     dropzone.addEventListener("drop", (e) => {
         e.preventDefault();
         dropzone.classList.remove("dropzone--highlight");
-        loadFile(e.dataTransfer.files);
+        loadFiles(e.dataTransfer.files);
     });
 
     document.body.addEventListener("dragover", (e) => e.preventDefault());
     document.body.addEventListener("drop",     (e) => e.preventDefault());
 
-    dragInput.addEventListener("change", () => loadFile(dragInput.files));
+    dragInput.addEventListener("change", () => loadFiles(dragInput.files));
 
     fileInput.addEventListener("change", () => {
-        updateSubmitState();
         requestPreview();
     });
 

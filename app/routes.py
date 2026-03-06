@@ -1,6 +1,7 @@
 import os
 import io
 import uuid
+import zipfile
 from flask import (
     Blueprint, render_template, request,
     send_file, redirect, url_for, flash, current_app
@@ -193,6 +194,70 @@ def history():
 
     return render_template("history.html", entries=entries)
 
+
+@main.route("/foliar-multiple", methods=["POST"])
+def foliar_multiple():
+    files = request.files.getlist("pdf_files")
+
+    if not files or all(f.filename == "" for f in files):
+        return "No se recibieron archivos.", 400
+
+    params = parse_form_params(request.form)
+    temp_folder = get_temp_folder()
+    log_folder = current_app.config["LOGS_FOLDER"]
+
+    zip_buffer = io.BytesIO()
+    errores = []
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file in files:
+            if not file.filename.lower().endswith(".pdf"):
+                errores.append(file.filename)
+                continue
+
+            file_id   = str(uuid.uuid4())
+            safe_name = secure_filename(file.filename)
+            temp_in   = os.path.join(temp_folder, f"{file_id}_in.pdf")
+            temp_out  = os.path.join(temp_folder, f"{file_id}_out.pdf")
+
+            try:
+                with open(temp_in, "wb") as f:
+                    while chunk := file.read(8192):
+                        f.write(chunk)
+
+                success = add_folios(
+                    input_path=temp_in,
+                    output_path=temp_out,
+                    preview_mode=False,
+                    log_folder=log_folder,
+                    filename=safe_name,
+                    **params,
+                )
+
+                if success and os.path.exists(temp_out):
+                    zf.write(temp_out, f"Foliado_{safe_name}")
+                else:
+                    errores.append(safe_name)
+
+            except Exception as e:
+                errores.append(safe_name)
+                print(f"[ERROR] {safe_name}: {e}")
+
+            finally:
+                for path in [temp_in, temp_out]:
+                    if os.path.exists(path):
+                        try:
+                            os.remove(path)
+                        except OSError:
+                            pass
+
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="Foliados.zip",
+    )
 
 # Error 
 @main.app_errorhandler(404)
