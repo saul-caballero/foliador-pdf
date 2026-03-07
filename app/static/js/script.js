@@ -133,6 +133,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function getStartFolioForIndex(index) {
+        const startNumber = parseInt(startNumberInput.value) || 1;
+        let accumulated = 0;
+
+        for (let i = 0; i < index; i++) {
+            const count = await getPageCount(loadedFiles[i]);
+            accumulated += typeof count === "number" ? count : 0;
+        }
+
+        return startNumber + accumulated;
+    }
+
     function renderFileList() {
         if (loadedFiles.length === 0) {
             fileList.hidden = true;
@@ -268,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Preview
 
-    function requestPreview() {
+    async function requestPreview() {
         if (!fileInput.files.length) return;
 
         updateFolioDisplay();
@@ -280,10 +292,19 @@ document.addEventListener("DOMContentLoaded", () => {
             previewImage.hidden = true;
 
             const formData = new FormData();
+            const folioForThisFile = await getStartFolioForIndex(currentPreviewIndex);
+
             formData.append("pdf_file", fileInput.files[0]);
             controls.forEach(ctrl => {
-                formData.append(`${ctrl.name}_prev`, ctrl.value);
+                if (ctrl.name === "start_number") {
+                    formData.append(`${ctrl.name}_prev`, folioForThisFile);
+                } else {
+                    formData.append(`${ctrl.name}_prev`, ctrl.value);
+                }
             });
+
+            // Actualizar el display del folio para este archivo
+            folioDisplay.textContent = `#${String(folioForThisFile).padStart(4, "0")}`;
 
             try {
                 const response = await fetch("/preview", { method: "POST", body: formData });
