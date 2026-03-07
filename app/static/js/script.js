@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
                  data-index="${i}" draggable="true">
                 <span class="file-list__drag">⠿</span>
                 <span class="file-list__name">${f.name}</span>
-                <span class="file-list__meta">${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
+                <span class="file-list__meta">${f._pages ? f._pages + " págs · " : ""}${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
                 <button type="button" class="file-list__remove" data-index="${i}">✕</button>
             </div>
         `).join("");
@@ -264,6 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
         newFiles.forEach(f => {
             if (!loadedFiles.find(existing => existing.name === f.name)) {
                 loadedFiles.push(f);
+                // Contar páginas en background y re-renderizar
+                getPageCount(f).then(count => {
+                    f._pages = count;
+                    renderFileList();
+                });
             }
         });
 
