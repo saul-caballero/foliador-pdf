@@ -32,6 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const progressBar   = document.getElementById("progress-bar");
     const progressText  = document.getElementById("progress-text");
 
+    const carouselControls  = document.getElementById("carousel-controls");
+    const carouselPrev      = document.getElementById("carousel-prev");
+    const carouselNext      = document.getElementById("carousel-next");
+    const carouselIndicator = document.getElementById("carousel-indicator");
+
+    let currentPreviewIndex = 0;
+
     const controls = form.querySelectorAll(
         "input:not([type='hidden']):not(#pdf-file-input), select"
     );
@@ -61,6 +68,25 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             submitBtn.textContent = "Foliar y Descargar";
         }
+    }
+
+    function updateCarousel() {
+        if (loadedFiles.length <= 1) {
+            carouselControls.hidden = true;
+            return;
+        }
+
+        carouselControls.hidden = false;
+        carouselIndicator.textContent = `${currentPreviewIndex + 1} / ${loadedFiles.length}`;
+        carouselPrev.disabled = currentPreviewIndex === 0;
+        carouselNext.disabled = currentPreviewIndex === loadedFiles.length - 1;
+    }
+
+    function goToPreview(index) {
+        currentPreviewIndex = index;
+        syncFileInput(loadedFiles[index]);
+        updateCarousel();
+        requestPreview();
     }
 
     function validateFile(file) {
@@ -158,6 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSubmitState();
 
         // Preview siempre del primer archivo
+        currentPreviewIndex = 0;
+        updateCarousel();
         syncFileInput(loadedFiles[0]);
 
         setTimeout(() => {
@@ -344,6 +372,14 @@ document.addEventListener("DOMContentLoaded", () => {
             ctrl.addEventListener("input", requestPreview);
             ctrl.addEventListener("input", updateFolioDisplay);
         }
+    });
+
+     carouselPrev.addEventListener("click", () => {
+        if (currentPreviewIndex > 0) goToPreview(currentPreviewIndex - 1);
+    });
+
+    carouselNext.addEventListener("click", () => {
+        if (currentPreviewIndex < loadedFiles.length - 1) goToPreview(currentPreviewIndex + 1);
     });
 
     form.addEventListener("submit", handleSubmit);
