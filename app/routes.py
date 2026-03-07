@@ -208,6 +208,7 @@ def foliar_multiple():
 
     zip_buffer = io.BytesIO()
     errores = []
+    current_number = params["start_number"]
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
@@ -225,17 +226,28 @@ def foliar_multiple():
                     while chunk := file.read(8192):
                         f.write(chunk)
 
+                # Contar paginas para avanzar el folio
+                from pypdf import PdfReader
+                reader = PdfReader(temp_in)
+                start_idx = max(0, params["start_page"] - 1)
+                end_idx = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
+                pages_to_folio = end_idx - start_idx
+
+                file_params = dict(params)
+                file_params["start_number"] = current_number
+
                 success = add_folios(
                     input_path=temp_in,
                     output_path=temp_out,
                     preview_mode=False,
                     log_folder=log_folder,
                     filename=safe_name,
-                    **params,
+                    **file_params,
                 )
 
                 if success and os.path.exists(temp_out):
                     zf.write(temp_out, f"Foliado_{safe_name}")
+                    current_number += pages_to_folio
                 else:
                     errores.append(safe_name)
 
@@ -259,6 +271,7 @@ def foliar_multiple():
         download_name="Foliados.zip",
     )
 
+    
 # Error 
 @main.app_errorhandler(404)
 def page_not_found(e):

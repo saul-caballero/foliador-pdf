@@ -42,6 +42,11 @@
     <section id="screen-config" class="screen" hidden>
         <div class="workspace">
             <div id="file-info" class="file-info"></div>
+            <div id="sort-controls" class="sort-controls" hidden>
+                <span class="sort-controls__label">Ordenar:</span>
+                <button type="button" id="sort-az" class="sort-btn">A → Z</button>
+                <button type="button" id="sort-za" class="sort-btn">Z → A</button>
+            </div>
             <div id="file-list" class="file-list" hidden></div>
             <form id="folio-form" method="POST" enctype="multipart/form-data" action="{{ url_for('main.index') }}"
                 class="form-panel">

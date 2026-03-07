@@ -37,6 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const carouselNext      = document.getElementById("carousel-next");
     const carouselIndicator = document.getElementById("carousel-indicator");
 
+    const sortControls = document.getElementById("sort-controls");
+    const sortAZ       = document.getElementById("sort-az");
+    const sortZA       = document.getElementById("sort-za");
+
     let currentPreviewIndex = 0;
 
     const controls = form.querySelectorAll(
@@ -82,10 +86,22 @@ document.addEventListener("DOMContentLoaded", () => {
         carouselNext.disabled = currentPreviewIndex === loadedFiles.length - 1;
     }
 
+    function sortFiles(direction) {
+        loadedFiles.sort((a, b) => {
+            const result = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+            return direction === "az" ? result : -result;
+        });
+        currentPreviewIndex = 0;
+        renderFileList();
+        updateCarousel();
+        goToPreview(0);
+    }
+
     function goToPreview(index) {
         currentPreviewIndex = index;
         syncFileInput(loadedFiles[index]);
         updateCarousel();
+        renderFileList();
         requestPreview();
     }
 
@@ -119,12 +135,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loadedFiles.length === 0) {
             fileList.hidden = true;
             fileInfo.innerHTML = "";
+            sortControls.hidden = true;
             return;
         }
 
+        sortControls.hidden = loadedFiles.length <= 1;
         fileList.hidden = false;
         fileList.innerHTML = loadedFiles.map((f, i) => `
-            <div class="file-list__item" data-index="${i}">
+            <div class="file-list__item ${i === currentPreviewIndex ? 'file-list__item--active' : ''}" 
+                 data-index="${i}" draggable="true">
+                <span class="file-list__drag">⠿</span>
                 <span class="file-list__name">${f.name}</span>
                 <span class="file-list__meta">${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
                 <button type="button" class="file-list__remove" data-index="${i}">✕</button>
@@ -139,17 +159,66 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderFileList();
                 updateSubmitState();
 
-                // Si queda 1 archivo actualizar preview con ese
-                if (loadedFiles.length === 1) {
-                    syncFileInput(loadedFiles[0]);
-                    requestPreview();
-                }
-
-                // Si no quedan archivos volver a pantalla inicial
                 if (loadedFiles.length === 0) {
                     screenUpload.hidden = false;
                     screenConfig.hidden = true;
+                    carouselControls.hidden = true;
+                    return;
                 }
+
+                currentPreviewIndex = Math.min(currentPreviewIndex, loadedFiles.length - 1);
+                updateCarousel();
+                goToPreview(currentPreviewIndex);
+            });
+        });
+
+        // Drag and drop para reordenar
+        let dragSrcIndex = null;
+
+        fileList.querySelectorAll(".file-list__item").forEach(item => {
+            item.addEventListener("dragstart", () => {
+                dragSrcIndex = parseInt(item.dataset.index);
+                item.classList.add("file-list__item--dragging");
+            });
+
+            item.addEventListener("dragend", () => {
+                item.classList.remove("file-list__item--dragging");
+                fileList.querySelectorAll(".file-list__item").forEach(i => {
+                    i.classList.remove("file-list__item--dragover");
+                });
+            });
+
+            item.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                item.classList.add("file-list__item--dragover");
+            });
+
+            item.addEventListener("dragleave", () => {
+                item.classList.remove("file-list__item--dragover");
+            });
+
+            item.addEventListener("drop", (e) => {
+                e.preventDefault();
+                const targetIndex = parseInt(item.dataset.index);
+
+                if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+
+                // Reordenar el array
+                const moved = loadedFiles.splice(dragSrcIndex, 1)[0];
+                loadedFiles.splice(targetIndex, 0, moved);
+
+                // Actualizar el índice activo
+                if (currentPreviewIndex === dragSrcIndex) {
+                    currentPreviewIndex = targetIndex;
+                } else if (dragSrcIndex < currentPreviewIndex && targetIndex >= currentPreviewIndex) {
+                    currentPreviewIndex--;
+                } else if (dragSrcIndex > currentPreviewIndex && targetIndex <= currentPreviewIndex) {
+                    currentPreviewIndex++;
+                }
+
+                dragSrcIndex = null;
+                renderFileList();
+                updateCarousel();
             });
         });
 
@@ -374,13 +443,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-     carouselPrev.addEventListener("click", () => {
+    carouselPrev.addEventListener("click", () => {
         if (currentPreviewIndex > 0) goToPreview(currentPreviewIndex - 1);
     });
 
     carouselNext.addEventListener("click", () => {
         if (currentPreviewIndex < loadedFiles.length - 1) goToPreview(currentPreviewIndex + 1);
     });
+
+    sortAZ.addEventListener("click", () => sortFiles("az"));
+    sortZA.addEventListener("click", () => sortFiles("za"));
 
     form.addEventListener("submit", handleSubmit);
 

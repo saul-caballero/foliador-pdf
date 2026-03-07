@@ -780,3 +780,58 @@ body {
     min-width: 40px;
     text-align: center;
 }
+
+
+.file-list__drag {
+    color: var(--color-text-muted);
+    cursor: grab;
+    font-size: 1rem;
+    padding-right: 4px;
+    flex-shrink: 0;
+}
+
+.file-list__item--active {
+    border-color: var(--color-accent);
+    background: #2a2010;
+}
+
+.file-list__item--dragging {
+    opacity: 0.4;
+}
+
+.file-list__item--dragover {
+    border-color: var(--color-accent);
+    background: #2a2010;
+}
+
+.sort-controls {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.sort-controls__label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.sort-btn {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background-color var(--transition), border-color var(--transition);
+}
+
+.sort-btn:hover {
+    background-color: var(--color-surface);
+    border-color: var(--color-accent);
+}
