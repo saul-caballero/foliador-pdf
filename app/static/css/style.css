@@ -854,3 +854,12 @@ body {
     background-color: var(--color-accent);
     color: #111;
 }
+
+.preview-panel__filename {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

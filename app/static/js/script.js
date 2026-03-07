@@ -43,6 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const addMoreInput = document.getElementById("add-more-input");
 
+    const previewFilename = document.getElementById("preview-filename");
+
     let currentPreviewIndex = 0;
 
     const controls = form.querySelectorAll(
@@ -101,6 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function goToPreview(index) {
         currentPreviewIndex = index;
+        previewFilename.textContent = loadedFiles[index].name;
+        previewFilename.hidden = false;
         syncFileInput(loadedFiles[index]);
         updateCarousel();
         renderFileList();
@@ -275,6 +279,8 @@ document.addEventListener("DOMContentLoaded", () => {
             screenUpload.hidden = true;
             screenConfig.hidden = false;
             fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            previewFilename.textContent = loadedFiles[0].name;
+            previewFilename.hidden = false;
         }, 300);
     }
 
