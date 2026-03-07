@@ -65,6 +65,29 @@ document.addEventListener("DOMContentLoaded", () => {
         folioDisplay.textContent = `#${String(n).padStart(4, "0")}`;
     }
 
+    function saveConfig() {
+        const config = {};
+        controls.forEach(ctrl => {
+            config[ctrl.name] = ctrl.value;
+        });
+        localStorage.setItem("folio-config", JSON.stringify(config));
+    }
+
+    function loadConfig() {
+        const saved = localStorage.getItem("folio-config");
+        if (!saved) return;
+        try {
+            const config = JSON.parse(saved);
+            controls.forEach(ctrl => {
+                if (config[ctrl.name] !== undefined) {
+                    ctrl.value = config[ctrl.name];
+                }
+            });
+        } catch (e) {
+            // config corrupta, ignorar
+        }
+    }
+
     function updateSubmitState() {
         const valid = loadedFiles.length > 0;
         submitBtn.disabled = !valid;
@@ -471,9 +494,11 @@ document.addEventListener("DOMContentLoaded", () => {
     controls.forEach(ctrl => {
         ctrl.addEventListener("change", requestPreview);
         ctrl.addEventListener("change", updateFolioDisplay);
+        ctrl.addEventListener("change", saveConfig);
         if (ctrl.type === "number" || ctrl.type === "text") {
             ctrl.addEventListener("input", requestPreview);
             ctrl.addEventListener("input", updateFolioDisplay);
+            ctrl.addEventListener("input", saveConfig);
         }
     });
 
@@ -494,6 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateSubmitState();
     updateFolioDisplay();
+    loadConfig();
 
     const themeToggle = document.getElementById("theme-toggle");
 
