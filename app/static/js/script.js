@@ -41,9 +41,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const sortAZ       = document.getElementById("sort-az");
     const sortZA       = document.getElementById("sort-za");
 
-    const addMoreInput = document.getElementById("add-more-input");
-
+    const addMoreInput    = document.getElementById("add-more-input");
     const previewFilename = document.getElementById("preview-filename");
+    const clearAllBtn     = document.getElementById("clear-all-btn");
+
+    const confirmModal   = document.getElementById("confirm-modal");
+    const confirmSummary = document.getElementById("confirm-summary");
+    const confirmCancel  = document.getElementById("confirm-cancel");
+    const confirmOk      = document.getElementById("confirm-ok");
+
+    const toast        = document.getElementById("toast");
+    const toastMessage = document.getElementById("toast-message");
+
+    const folioRangeDisplay = document.getElementById("folio-range-display");
+    const folioRangeText    = document.getElementById("folio-range-text");
 
     let currentPreviewIndex = 0;
 
@@ -63,6 +74,25 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateFolioDisplay() {
         const n = parseInt(startNumberInput.value) || 1;
         folioDisplay.textContent = `#${String(n).padStart(4, "0")}`;
+    }
+
+    async function updateFolioRange() {
+        if (loadedFiles.length === 0) {
+            folioRangeDisplay.hidden = true;
+            return;
+        }
+
+        const startNumber = parseInt(startNumberInput.value) || 1;
+        let totalPages = 0;
+
+        for (const f of loadedFiles) {
+            const count = await getPageCount(f);
+            totalPages += typeof count === "number" ? count : 0;
+        }
+
+        const endFolio = startNumber + totalPages - 1;
+        folioRangeText.textContent = `${String(startNumber).padStart(4, "0")} — ${String(endFolio).padStart(4, "0")} | TOTAL: ${totalPages} páginas.`;
+        folioRangeDisplay.hidden = false;
     }
 
     function saveConfig() {
@@ -124,6 +154,79 @@ document.addEventListener("DOMContentLoaded", () => {
         goToPreview(0);
     }
 
+    function clearAll() {
+        loadedFiles = [];
+        currentPreviewIndex = 0;
+        renderFileList();
+        updateSubmitState();
+        updateCarousel();
+        previewImage.hidden = true;
+        previewMessage.textContent = "Sube un PDF para ver la vista previa de la primera página.";
+        previewMessage.hidden = false;
+        previewFilename.hidden = true;
+        screenUpload.hidden = false;
+        screenConfig.hidden = true;
+        clearAllBtn.hidden = true;
+    }
+
+    function showToast(message, delay = 3500) {
+        setTimeout(() => {
+            toastMessage.textContent = message;
+            toast.removeAttribute("hidden");
+            toast.classList.add("toast--visible");
+            setTimeout(() => {
+                toast.classList.remove("toast--visible");
+                toast.setAttribute("hidden", "");
+                toastMessage.textContent = "";
+                window.location.reload();
+            }, delay);
+        }, 1500);
+    }
+
+    async function showConfirmModal() {
+    const startNumber = parseInt(startNumberInput.value) || 1;
+
+    let totalPages = 0;
+    for (const f of loadedFiles) {
+        const count = await getPageCount(f);
+        totalPages += typeof count === "number" ? count : 0;
+    }
+
+    const endFolio = startNumber + totalPages - 1;
+
+    const corruptos = loadedFiles.filter(f => f._corrupt);
+    const corruptWarning = corruptos.length > 0 ? `
+        <div class="confirm-summary__row confirm-summary__warning">
+            <span>⚠ Archivos con problemas</span>
+            <span class="confirm-summary__value">${corruptos.length}</span>
+        </div>
+        ${corruptos.map(f => `
+            <div class="confirm-summary__row">
+                <span class="confirm-summary__corrupt-name">— ${f.name}</span>
+            </div>
+        `).join("")}
+    ` : "";
+
+    confirmSummary.innerHTML = `
+        <div class="confirm-summary__row">
+            <span>Archivos</span>
+            <span class="confirm-summary__value">${loadedFiles.length}</span>
+        </div>
+        <div class="confirm-summary__row">
+            <span>Páginas totales</span>
+            <span class="confirm-summary__value">${totalPages}</span>
+        </div>
+        <div class="confirm-summary__row">
+            <span>Rango de folios</span>
+            <span class="confirm-summary__value">${String(startNumber).padStart(4, "0")} — ${String(endFolio).padStart(4, "0")}</span>
+        </div>
+        ${corruptWarning}
+    `;
+
+    confirmModal.hidden = false;
+}
+
+
     function goToPreview(index) {
         currentPreviewIndex = index;
         previewFilename.textContent = loadedFiles[index].name;
@@ -177,16 +280,18 @@ document.addEventListener("DOMContentLoaded", () => {
             fileList.hidden = true;
             fileInfo.innerHTML = "";
             sortControls.hidden = true;
+            clearAllBtn.hidden = true;
             return;
         }
 
         sortControls.hidden = loadedFiles.length <= 1;
+        clearAllBtn.hidden = false;
         fileList.hidden = false;
         fileList.innerHTML = loadedFiles.map((f, i) => `
             <div class="file-list__item ${i === currentPreviewIndex ? 'file-list__item--active' : ''}" 
                  data-index="${i}" draggable="true">
                 <span class="file-list__drag">⠿</span>
-                <span class="file-list__name">${f.name}</span>
+                <span class="file-list__name ${f._corrupt ? 'file-list__name--corrupt' : ''}">${f.name}${f._corrupt ? ' ⚠' : ''}</span>
                 <span class="file-list__meta">${f._pages ? f._pages + " págs · " : ""}${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
                 <button type="button" class="file-list__remove" data-index="${i}">✕</button>
             </div>
@@ -265,10 +370,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Info general
         const total = loadedFiles.reduce((acc, f) => acc + f.size, 0);
+        const totalMB = total / (1024 * 1024);
+        const warningMsg = loadedFiles.length > 20 || totalMB > 500
+            ? `⚠ ${loadedFiles.length} archivos · ${totalMB.toFixed(0)} MB — El procesamiento puede tardar varios minutos.`
+            : "";
+
         fileInfo.innerHTML = `
             <span class="file-info__name">${loadedFiles.length} archivo${loadedFiles.length > 1 ? "s" : ""} cargado${loadedFiles.length > 1 ? "s" : ""}</span>
-            <span class="file-info__meta">${(total / (1024 * 1024)).toFixed(2)} MB total</span>
+            <span class="file-info__meta">${totalMB.toFixed(2)} MB total</span>
+            ${warningMsg ? `<span class="file-info__warning">${warningMsg}</span>` : ""}
         `;
+
     }
 
     function syncFileInput(file) {
@@ -290,6 +402,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Contar páginas en background y re-renderizar
                 getPageCount(f).then(count => {
                     f._pages = count;
+                    if (count === "?") {
+                        f._corrupt = true;
+                    }
                     renderFileList();
                 });
             }
@@ -309,6 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fileInput.dispatchEvent(new Event("change", { bubbles: true }));
             previewFilename.textContent = loadedFiles[0].name;
             previewFilename.hidden = false;
+            updateFolioRange();
         }, 300);
     }
 
@@ -363,7 +479,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function handleSubmit(event) {
         event.preventDefault();
         if (loadedFiles.length === 0) return;
+        showConfirmModal();
+    }
 
+    function processUpload() {
+        confirmModal.hidden = true;
         loadingModal.hidden = false;
         progressBar.style.width = "0%";
         progressText.textContent = "0%";
@@ -400,7 +520,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    window.location.reload();
+                    showToast("PDF cargado correctamente para descargar");
                 } else {
                     alert(`Error ${xhr.status} al procesar el archivo.`);
                     window.location.reload();
@@ -453,7 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    window.location.reload();
+                    showToast("ZIP cargado correctamente para descargar");
                 } else {
                     alert(`Error ${xhr.status} al procesar los archivos.`);
                     window.location.reload();
@@ -499,6 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ctrl.addEventListener("input", requestPreview);
             ctrl.addEventListener("input", updateFolioDisplay);
             ctrl.addEventListener("input", saveConfig);
+            ctrl.addEventListener("input", updateFolioRange);
         }
     });
 
@@ -516,6 +637,13 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", handleSubmit);
 
     addMoreInput.addEventListener("change", () => loadFiles(addMoreInput.files));
+    clearAllBtn.addEventListener("click", clearAll);
+
+    confirmCancel.addEventListener("click", () => {
+        confirmModal.hidden = true;
+    });
+
+    confirmOk.addEventListener("click", processUpload);
 
     updateSubmitState();
     updateFolioDisplay();
