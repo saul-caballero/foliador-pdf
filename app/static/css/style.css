@@ -835,3 +835,22 @@ body {
     background-color: var(--color-surface);
     border-color: var(--color-accent);
 }
+
+.btn--secondary {
+    padding: 6px 14px;
+    background-color: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition), color var(--transition);
+    letter-spacing: 0.02em;
+}
+
+.btn--secondary:hover {
+    background-color: var(--color-accent);
+    color: #111;
+}

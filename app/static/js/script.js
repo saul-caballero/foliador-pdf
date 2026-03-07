@@ -41,6 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const sortAZ       = document.getElementById("sort-az");
     const sortZA       = document.getElementById("sort-za");
 
+    const addMoreInput = document.getElementById("add-more-input");
+
     let currentPreviewIndex = 0;
 
     const controls = form.querySelectorAll(
@@ -455,6 +457,8 @@ document.addEventListener("DOMContentLoaded", () => {
     sortZA.addEventListener("click", () => sortFiles("za"));
 
     form.addEventListener("submit", handleSubmit);
+
+    addMoreInput.addEventListener("change", () => loadFiles(addMoreInput.files));
 
     updateSubmitState();
     updateFolioDisplay();
