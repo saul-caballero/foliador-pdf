@@ -494,4 +494,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateSubmitState();
     updateFolioDisplay();
+
+    const themeToggle = document.getElementById("theme-toggle");
+
+    themeToggle.addEventListener("click", () => {
+        const isLight = document.body.classList.toggle("theme--light");
+        themeToggle.textContent = isLight ? "🌙 Oscuro" : "☀️ Claro";
+        localStorage.setItem("theme", isLight ? "light" : "dark");
+    });
+
+    // Recordar preferencia
+    if (localStorage.getItem("theme") === "light") {
+        document.body.classList.add("theme--light");
+        themeToggle.textContent = "🌙 Oscuro";
+    }
 });
