@@ -56,7 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const folioRangeDisplay = document.getElementById("folio-range-display");
     const folioRangeText    = document.getElementById("folio-range-text");
 
+    const themeToggle = document.getElementById("theme-toggle");
+
     let currentPreviewIndex = 0;
+    let loadedFiles = [];
 
     const controls = form.querySelectorAll(
         "input:not([type='hidden']):not(#pdf-file-input), select"
@@ -66,10 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const PREVIEW_DELAY  = 750;
     let previewTimer = null;
 
-    // Lista de archivos cargados para modo múltiple
-    let loadedFiles = [];
-
-    // Utilities
+    // Utilidades
 
     function updateFolioDisplay() {
         const n = parseInt(startNumberInput.value) || 1;
@@ -97,9 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function saveConfig() {
         const config = {};
-        controls.forEach(ctrl => {
-            config[ctrl.name] = ctrl.value;
-        });
+        controls.forEach(ctrl => { config[ctrl.name] = ctrl.value; });
         localStorage.setItem("folio-config", JSON.stringify(config));
     }
 
@@ -109,13 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const config = JSON.parse(saved);
             controls.forEach(ctrl => {
-                if (config[ctrl.name] !== undefined) {
-                    ctrl.value = config[ctrl.name];
-                }
+                if (config[ctrl.name] !== undefined) ctrl.value = config[ctrl.name];
             });
-        } catch (e) {
-            // config corrupta, ignorar
-        }
+        } catch (e) { /* config corrupta, ignorar */ }
     }
 
     function updateSubmitState() {
@@ -136,7 +130,6 @@ document.addEventListener("DOMContentLoaded", () => {
             carouselControls.hidden = true;
             return;
         }
-
         carouselControls.hidden = false;
         carouselIndicator.textContent = `${currentPreviewIndex + 1} / ${loadedFiles.length}`;
         carouselPrev.disabled = currentPreviewIndex === 0;
@@ -184,48 +177,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function showConfirmModal() {
-    const startNumber = parseInt(startNumberInput.value) || 1;
+        const startNumber = parseInt(startNumberInput.value) || 1;
 
-    let totalPages = 0;
-    for (const f of loadedFiles) {
-        const count = await getPageCount(f);
-        totalPages += typeof count === "number" ? count : 0;
-    }
+        let totalPages = 0;
+        for (const f of loadedFiles) {
+            const count = await getPageCount(f);
+            totalPages += typeof count === "number" ? count : 0;
+        }
 
-    const endFolio = startNumber + totalPages - 1;
+        const endFolio = startNumber + totalPages - 1;
+        const corruptos = loadedFiles.filter(f => f._corrupt);
 
-    const corruptos = loadedFiles.filter(f => f._corrupt);
-    const corruptWarning = corruptos.length > 0 ? `
-        <div class="confirm-summary__row confirm-summary__warning">
-            <span>⚠ Archivos con problemas</span>
-            <span class="confirm-summary__value">${corruptos.length}</span>
-        </div>
-        ${corruptos.map(f => `
-            <div class="confirm-summary__row">
-                <span class="confirm-summary__corrupt-name">— ${f.name}</span>
+        const corruptWarning = corruptos.length > 0 ? `
+            <div class="confirm-summary__row confirm-summary__warning">
+                <span>⚠ Archivos con problemas</span>
+                <span class="confirm-summary__value">${corruptos.length}</span>
             </div>
-        `).join("")}
-    ` : "";
+            ${corruptos.map(f => `
+                <div class="confirm-summary__row">
+                    <span class="confirm-summary__corrupt-name">— ${f.name}</span>
+                </div>
+            `).join("")}
+        ` : "";
 
-    confirmSummary.innerHTML = `
-        <div class="confirm-summary__row">
-            <span>Archivos</span>
-            <span class="confirm-summary__value">${loadedFiles.length}</span>
-        </div>
-        <div class="confirm-summary__row">
-            <span>Páginas totales</span>
-            <span class="confirm-summary__value">${totalPages}</span>
-        </div>
-        <div class="confirm-summary__row">
-            <span>Rango de folios</span>
-            <span class="confirm-summary__value">${String(startNumber).padStart(4, "0")} — ${String(endFolio).padStart(4, "0")}</span>
-        </div>
-        ${corruptWarning}
-    `;
+        confirmSummary.innerHTML = `
+            <div class="confirm-summary__row">
+                <span>Archivos</span>
+                <span class="confirm-summary__value">${loadedFiles.length}</span>
+            </div>
+            <div class="confirm-summary__row">
+                <span>Páginas totales</span>
+                <span class="confirm-summary__value">${totalPages}</span>
+            </div>
+            <div class="confirm-summary__row">
+                <span>Rango de folios</span>
+                <span class="confirm-summary__value">${String(startNumber).padStart(4, "0")} — ${String(endFolio).padStart(4, "0")}</span>
+            </div>
+            ${corruptWarning}
+        `;
 
-    confirmModal.hidden = false;
-}
-
+        confirmModal.hidden = false;
+        // Foco al botón OK para que Enter lo confirme
+        confirmOk.focus();
+    }
 
     function goToPreview(index) {
         currentPreviewIndex = index;
@@ -275,6 +269,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return startNumber + accumulated;
     }
 
+    // Render File List
+
     function renderFileList() {
         if (loadedFiles.length === 0) {
             fileList.hidden = true;
@@ -287,17 +283,19 @@ document.addEventListener("DOMContentLoaded", () => {
         sortControls.hidden = loadedFiles.length <= 1;
         clearAllBtn.hidden = false;
         fileList.hidden = false;
+
         fileList.innerHTML = loadedFiles.map((f, i) => `
-            <div class="file-list__item ${i === currentPreviewIndex ? 'file-list__item--active' : ''}" 
+            <div class="file-list__item ${i === currentPreviewIndex ? "file-list__item--active" : ""}"
                  data-index="${i}" draggable="true">
                 <span class="file-list__drag">⠿</span>
-                <span class="file-list__name ${f._corrupt ? 'file-list__name--corrupt' : ''}">${f.name}${f._corrupt ? ' ⚠' : ''}</span>
+                <span class="file-list__icon">📄</span>
+                <span class="file-list__name ${f._corrupt ? "file-list__name--corrupt" : ""}">${f.name}${f._corrupt ? " ⚠" : ""}</span>
                 <span class="file-list__meta">${f._pages ? f._pages + " págs · " : ""}${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
                 <button type="button" class="file-list__remove" data-index="${i}">✕</button>
             </div>
         `).join("");
 
-        // Listeners para quitar archivos
+        // Quitar archivos
         fileList.querySelectorAll(".file-list__remove").forEach(btn => {
             btn.addEventListener("click", () => {
                 const idx = parseInt(btn.dataset.index);
@@ -318,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Drag and drop para reordenar
+        // Drag & drop para reordenar
         let dragSrcIndex = null;
 
         fileList.querySelectorAll(".file-list__item").forEach(item => {
@@ -346,14 +344,11 @@ document.addEventListener("DOMContentLoaded", () => {
             item.addEventListener("drop", (e) => {
                 e.preventDefault();
                 const targetIndex = parseInt(item.dataset.index);
-
                 if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
 
-                // Reordenar el array
                 const moved = loadedFiles.splice(dragSrcIndex, 1)[0];
                 loadedFiles.splice(targetIndex, 0, moved);
 
-                // Actualizar el índice activo
                 if (currentPreviewIndex === dragSrcIndex) {
                     currentPreviewIndex = targetIndex;
                 } else if (dragSrcIndex < currentPreviewIndex && targetIndex >= currentPreviewIndex) {
@@ -369,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // Info general
-        const total = loadedFiles.reduce((acc, f) => acc + f.size, 0);
+        const total   = loadedFiles.reduce((acc, f) => acc + f.size, 0);
         const totalMB = total / (1024 * 1024);
         const warningMsg = loadedFiles.length > 20 || totalMB > 500
             ? `⚠ ${loadedFiles.length} archivos · ${totalMB.toFixed(0)} MB — El procesamiento puede tardar varios minutos.`
@@ -380,7 +375,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="file-info__meta">${totalMB.toFixed(2)} MB total</span>
             ${warningMsg ? `<span class="file-info__warning">${warningMsg}</span>` : ""}
         `;
-
     }
 
     function syncFileInput(file) {
@@ -395,16 +389,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const newFiles = Array.from(fileListInput).filter(validateFile);
         if (newFiles.length === 0) return;
 
-        // Agregar a la lista sin duplicados por nombre
         newFiles.forEach(f => {
             if (!loadedFiles.find(existing => existing.name === f.name)) {
                 loadedFiles.push(f);
-                // Contar páginas en background y re-renderizar
                 getPageCount(f).then(count => {
                     f._pages = count;
-                    if (count === "?") {
-                        f._corrupt = true;
-                    }
+                    if (count === "?") f._corrupt = true;
                     renderFileList();
                 });
             }
@@ -413,7 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFileList();
         updateSubmitState();
 
-        // Preview siempre del primer archivo
         currentPreviewIndex = 0;
         updateCarousel();
         syncFileInput(loadedFiles[0]);
@@ -453,7 +442,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            // Actualizar el display del folio para este archivo
             folioDisplay.textContent = `#${String(folioForThisFile).padStart(4, "0")}`;
 
             try {
@@ -470,7 +458,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 previewMessage.innerHTML = `<span style="color:#c8401a">Error: ${err.message}</span>`;
                 previewImage.hidden = true;
             }
-
         }, PREVIEW_DELAY);
     }
 
@@ -491,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData(form);
 
         if (loadedFiles.length === 1) {
-            // Modo single: ruta original
             formData.set("pdf_file", loadedFiles[0]);
 
             const xhr = new XMLHttpRequest();
@@ -538,18 +524,10 @@ document.addEventListener("DOMContentLoaded", () => {
             xhr.send(formData);
 
         } else {
-            // Modo múltiple: ruta /foliar-multiple
             const multiFormData = new FormData();
 
-            // Agregar parámetros del formulario
-            controls.forEach(ctrl => {
-                multiFormData.append(ctrl.name, ctrl.value);
-            });
-
-            // Agregar todos los archivos
-            loadedFiles.forEach(f => {
-                multiFormData.append("pdf_files", f);
-            });
+            controls.forEach(ctrl => { multiFormData.append(ctrl.name, ctrl.value); });
+            loadedFiles.forEach(f  => { multiFormData.append("pdf_files", f); });
 
             const xhr = new XMLHttpRequest();
 
@@ -592,8 +570,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Events
+    // Eventos
 
+    // Dropzone
     dropzone.addEventListener("dragover",  (e) => { e.preventDefault(); dropzone.classList.add("dropzone--highlight"); });
     dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("dropzone--highlight"); });
     dropzone.addEventListener("drop", (e) => {
@@ -605,12 +584,13 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.addEventListener("dragover", (e) => e.preventDefault());
     document.body.addEventListener("drop",     (e) => e.preventDefault());
 
-    dragInput.addEventListener("change", () => loadFiles(dragInput.files));
+    dragInput.addEventListener("change",   () => loadFiles(dragInput.files));
+    addMoreInput.addEventListener("change", () => loadFiles(addMoreInput.files));
+    clearAllBtn.addEventListener("click",   clearAll);
 
-    fileInput.addEventListener("change", () => {
-        requestPreview();
-    });
+    fileInput.addEventListener("change", () => requestPreview());
 
+    // Controles del formulario
     controls.forEach(ctrl => {
         ctrl.addEventListener("change", requestPreview);
         ctrl.addEventListener("change", updateFolioDisplay);
@@ -623,43 +603,55 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Carousel
     carouselPrev.addEventListener("click", () => {
         if (currentPreviewIndex > 0) goToPreview(currentPreviewIndex - 1);
     });
-
     carouselNext.addEventListener("click", () => {
         if (currentPreviewIndex < loadedFiles.length - 1) goToPreview(currentPreviewIndex + 1);
     });
 
+    // Teclado: flechas en carousel
+    document.addEventListener("keydown", (e) => {
+        // Escape: cerrar modal de confirmación
+        if (e.key === "Escape" && !confirmModal.hidden) {
+            confirmModal.hidden = true;
+            return;
+        }
+
+        // Enter: confirmar modal (ya se maneja con focus en confirmOk, pero por si acaso)
+        if (e.key === "Enter" && !confirmModal.hidden) {
+            e.preventDefault();
+            processUpload();
+            return;
+        }
+    });
+
+    // Ordenar
     sortAZ.addEventListener("click", () => sortFiles("az"));
     sortZA.addEventListener("click", () => sortFiles("za"));
 
+    // Form
     form.addEventListener("submit", handleSubmit);
 
-    addMoreInput.addEventListener("change", () => loadFiles(addMoreInput.files));
-    clearAllBtn.addEventListener("click", clearAll);
-
-    confirmCancel.addEventListener("click", () => {
-        confirmModal.hidden = true;
-    });
-
+    // Confirm modal
+    confirmCancel.addEventListener("click", () => { confirmModal.hidden = true; });
     confirmOk.addEventListener("click", processUpload);
 
-    updateSubmitState();
-    updateFolioDisplay();
-    loadConfig();
-
-    const themeToggle = document.getElementById("theme-toggle");
-
+    // Theme toggle
     themeToggle.addEventListener("click", () => {
         const isLight = document.body.classList.toggle("theme--light");
         themeToggle.textContent = isLight ? "🌙 Oscuro" : "☀️ Claro";
         localStorage.setItem("theme", isLight ? "light" : "dark");
     });
 
-    // Recordar preferencia
     if (localStorage.getItem("theme") === "light") {
         document.body.classList.add("theme--light");
         themeToggle.textContent = "🌙 Oscuro";
     }
+
+    // Init
+    updateSubmitState();
+    updateFolioDisplay();
+    loadConfig();
 });
