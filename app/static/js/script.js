@@ -772,6 +772,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ONBOARDING
+    const ONBOARDING_TIPS = [
+        "Arrastra varios PDFs a la vez y reordénalos antes de foliar.",
+        "La vista previa muestra la posición exacta del folio antes de procesar.",
+        "El historial registra cada operación con fecha, duración e IP.",
+        "Exporta el historial a Excel o CSV con los filtros aplicados.",
+        "Puedes foliar hasta 2 GB por archivo en red local.",
+        "Usa folios consecutivos para expedientes divididos en varios PDFs.",
+        "El folio se imprime con 4 dígitos: ej. 1 es 0001.",
+        "Cambia la esquina según lo indique la convocatoria.",
+        "Modo oscuro/claro disponible en el encabezado.",
+    ];
+
+    const onboardingModal  = document.getElementById("onboarding-modal");
+    const onboardingTip    = document.getElementById("onboarding-tip");
+    const onboardingSkip   = document.getElementById("onboarding-skip");
+    const onboardingOk     = document.getElementById("onboarding-ok");
+
+    if (!localStorage.getItem("onboarding-seen")) {
+        const randomTip = ONBOARDING_TIPS[Math.floor(Math.random() * ONBOARDING_TIPS.length)];
+        onboardingTip.textContent = randomTip;
+        onboardingModal.hidden = false;
+    }
+
+    onboardingOk.addEventListener("click", () => {
+        onboardingModal.hidden = true;
+    });
+
+    onboardingSkip.addEventListener("click", () => {
+        localStorage.setItem("onboarding-seen", "1");
+        onboardingModal.hidden = true;
+    });
+
     updateSubmitState();
     updateFolioDisplay();
     loadConfig();

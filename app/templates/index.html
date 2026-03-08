@@ -226,6 +226,30 @@
     <span id="toast-message"></span>
 </div>
 
+<div id="onboarding-modal" class="modal" hidden>
+    <div class="modal__box modal__box--onboarding">
+        <div class="onboarding__header">
+            <div class="onboarding__brand">
+                <span class="onboarding__version">Foliador PDF · v1.3.0</span>
+                <span class="onboarding__credits">Desarrollado por IT Servyre · SC🛡️</span>
+            </div>
+        </div>
+        <h2 class="onboarding__title">Bienvenido al Foliador PDF</h2>
+        <p class="onboarding__desc">Herramienta interna para la numeración automática de documentos en licitaciones y concursos de obra pública.</p>
+        <div class="onboarding__tip-box">
+            <span class="onboarding__tip-label">Tip:</span>
+            <span id="onboarding-tip"></span>
+        </div>
+        <div class="onboarding__warning">
+            © 2026 Foliador PDF · Servyre
+        </div>
+        <div class="onboarding__actions">
+            <button type="button" id="onboarding-skip" class="btn btn--secondary">No mostrar de nuevo</button>
+            <button type="button" id="onboarding-ok" class="btn btn--primary" style="margin-top:0;">Entendido →</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
