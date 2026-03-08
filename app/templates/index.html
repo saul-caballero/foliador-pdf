@@ -33,8 +33,8 @@
 
     <section id="screen-upload" class="screen screen--active">
         <label id="dropzone" for="pdf-drag-input" class="dropzone">
-            <img src="{{ url_for('static', filename='img/pdf.png') }}" class="dropzone__icon" alt="PDF"><span
-                class="dropzone__text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
+            <img src="{{ url_for('static', filename='img/pdf.png') }}" class="dropzone__icon" alt="PDF">
+            <span class="dropzone__text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
             <span class="dropzone__hint">Máximo 2 GB por PDF INDIVIDUAL</span>
             <input type="file" id="pdf-drag-input" accept="application/pdf" multiple hidden>
         </label>
@@ -56,6 +56,7 @@
                 <button type="button" id="sort-za" class="sort-btn">Z → A</button>
             </div>
             <div id="file-list" class="file-list" hidden></div>
+
             <form id="folio-form" method="POST" enctype="multipart/form-data" action="{{ url_for('main.index') }}"
                 class="form-panel">
                 <input type="file" id="pdf-file-input" name="pdf_file" accept="application/pdf" hidden>
@@ -64,11 +65,15 @@
                     <h2 class="section-title">1. Configuración</h2>
 
                     <div class="field">
-                        <label class="field__label" for="start_number">Número de folio inicial</label>
+                        <label class="field__label" for="start_number">
+                            Número de folio inicial
+                            <button type="button" class="field__info" data-hint="start_number">?</button>
+                        </label>
                         <input class="field__input" type="number" id="start_number" name="start_number" value="1"
                             min="1" required>
-                        <span class="field__hint">Formato 4 dígitos - ej: 1 - 0001</span>
+                        <span class="field__hint">Formato 4 dígitos - ej: 1 → 0001</span>
                     </div>
+
                     <div id="folio-range-display" class="folio-range" hidden>
                         <span>Rango estimado: </span>
                         <strong id="folio-range-text"></strong>
@@ -76,13 +81,19 @@
 
                     <div class="field-row">
                         <div class="field">
-                            <label class="field__label" for="start_page">Página inicial</label>
+                            <label class="field__label" for="start_page">
+                                Página inicial
+                                <button type="button" class="field__info" data-hint="start_page">?</button>
+                            </label>
                             <input class="field__input" type="number" id="start_page" name="start_page" value="1"
                                 min="1">
                             <span class="field__hint">1 para foliar desde el inicio</span>
                         </div>
                         <div class="field">
-                            <label class="field__label" for="end_page">Página final</label>
+                            <label class="field__label" for="end_page">
+                                Página final
+                                <button type="button" class="field__info" data-hint="end_page">?</button>
+                            </label>
                             <input class="field__input" type="number" id="end_page" name="end_page"
                                 placeholder="Hasta el final">
                             <span class="field__hint">Vacío = hasta la última página</span>
@@ -95,13 +106,19 @@
 
                     <div class="field-row">
                         <div class="field">
-                            <label class="field__label" for="font_size">Tamaño de fuente</label>
-                            <input class="field__input" type="number" id="font_size" name="font_size" value="14" min="8"
-                                max="72">
+                            <label class="field__label" for="font_size">
+                                Tamaño de fuente
+                                <button type="button" class="field__info" data-hint="font_size">?</button>
+                            </label>
+                            <input class="field__input" type="number" id="font_size" name="font_size" value="14"
+                                min="8" max="72">
                             <span class="field__hint">8 a 72 puntos</span>
                         </div>
                         <div class="field">
-                            <label class="field__label" for="offset">Margen lateral (cm)</label>
+                            <label class="field__label" for="offset">
+                                Margen lateral (cm)
+                                <button type="button" class="field__info" data-hint="offset">?</button>
+                            </label>
                             <input class="field__input" type="number" id="offset" name="offset" value="1.0" min="0.5"
                                 max="5.0" step="0.1">
                             <span class="field__hint">0.5 a 5.0 cm</span>
@@ -110,20 +127,28 @@
 
                     <div class="field-row">
                         <div class="field">
-                            <label class="field__label" for="corner">Esquina</label>
+                            <label class="field__label" for="corner">
+                                Esquina
+                                <button type="button" class="field__info" data-hint="corner">?</button>
+                            </label>
                             <select class="field__input" id="corner" name="corner">
                                 <option value="bottom-right" selected>Abajo derecha</option>
                                 <option value="bottom-left">Abajo izquierda</option>
                                 <option value="top-right">Arriba derecha</option>
                                 <option value="top-left">Arriba izquierda</option>
                             </select>
+                            <span class="field__hint">Esquina donde se estampará el folio</span>
                         </div>
                         <div class="field">
-                            <label class="field__label" for="orientation">Orientación</label>
+                            <label class="field__label" for="orientation">
+                                Orientación
+                                <button type="button" class="field__info" data-hint="orientation">?</button>
+                            </label>
                             <select class="field__input" id="orientation" name="orientation">
                                 <option value="horizontal" selected>Horizontal</option>
                                 <option value="vertical">Vertical</option>
                             </select>
+                            <span class="field__hint">Horizontal es lo más común</span>
                         </div>
                     </div>
                 </div>
@@ -171,7 +196,7 @@
 </main>
 
 <footer class="footer">
-    <p>© 2026 Foliador PDF · Servyre · Dudas o Sugerencias: <a
+    <p>© 2026 Foliador PDF · Servyre · v1.3.0 · Dudas o Sugerencias: <a
             href="mailto:saul.caballero@servyre.com">saul.caballero@servyre.com</a></p>
 </footer>
 
@@ -185,6 +210,7 @@
         </div>
     </div>
 </div>
+
 <div id="confirm-modal" class="modal" hidden>
     <div class="modal__box">
         <h3 class="modal__title">Confirmar foliado</h3>

@@ -227,11 +227,62 @@ body {
     background: #2a2a2a;
 }
 
-.field__hint {
-    font-size: 0.73rem;
-    color: var(--color-text-muted);
-    font-family: var(--font-sans);
+
+.field__info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: #888;
+    font-size: 0.7rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 6px;
+    vertical-align: middle;
+    line-height: 1;
+    padding: 0;
 }
+
+.field__info:hover {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.field__hint {
+    display: block;
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 3px;
+}
+
+.field__popover {
+    position: absolute;
+    z-index: 50;
+    background: #1e1e2e;
+    color: #f0f0f0;
+    font-size: 0.82rem;
+    padding: 10px 14px;
+    border-radius: 0;
+    max-width: 260px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.field__popover::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 14px;
+    border-width: 0 6px 6px 6px;
+    border-style: solid;
+    border-color: transparent transparent #1e1e2e transparent;
+}
+
 
 /* Buttons */
 .btn--primary {

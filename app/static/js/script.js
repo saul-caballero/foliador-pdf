@@ -722,6 +722,56 @@ document.addEventListener("DOMContentLoaded", () => {
         themeToggle.textContent = "🌙 Oscuro";
     }
 
+    const FIELD_TOOLTIPS = {
+        start_number: "El folio se imprime con 4 dígitos. Ej: si pones 500, sería 0500, 0501, 0502…",
+        start_page:   "Útil si tu documento tiene portada o índice que no quieres foliar.",
+        end_page:     "Si tu expediente tiene anexos al final que no deben llevar folio.",
+        font_size:    "14pt es el valor por defecto. Reduce si el folio tapa contenido por márgenes pequeños.",
+        offset:       "1.0cm es suficiente para la mayoría de documentos. Aumenta si el folio queda muy pegado al borde.",
+        corner:       "Posición donde se estampará el folio. Algunas licitaciones especifican la esquina exacta en la convocatoria.",
+        orientation:  "Usa Vertical solo si el expediente se encuaderna por el lado izquierdo y el folio debe leerse girando el documento.",
+    };
+
+    let activePopover = null;
+
+    document.querySelectorAll(".field__info").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            // Si ya hay uno abierto del mismo botón, cerrarlo
+            if (activePopover && activePopover._source === btn) {
+                activePopover.remove();
+                activePopover = null;
+                return;
+            }
+
+            // Cerrar cualquier popover abierto
+            if (activePopover) {
+                activePopover.remove();
+                activePopover = null;
+            }
+
+            const key  = btn.dataset.hint;
+            const text = FIELD_TOOLTIPS[key];
+            if (!text) return;
+
+            const popover = document.createElement("div");
+            popover.className = "field__popover";
+            popover.textContent = text;
+            popover._source = btn;
+
+            btn.closest(".field").appendChild(popover);
+            activePopover = popover;
+        });
+    });
+
+    document.addEventListener("click", () => {
+        if (activePopover) {
+            activePopover.remove();
+            activePopover = null;
+        }
+    });
+
     updateSubmitState();
     updateFolioDisplay();
     loadConfig();
