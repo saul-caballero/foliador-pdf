@@ -88,7 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // UTILIDADES
 
     function updateFolioDisplay() {
-        const n = parseInt(startNumberInput.value) || 1;
+        let n = parseInt(startNumberInput.value) || 1;
+        if (n < 1) {
+            n = 1;
+            startNumberInput.value = 1;
+        }
         folioDisplay.textContent = `#${String(n).padStart(4, "0")}`;
     }
 
@@ -687,6 +691,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Enter" && !confirmModal.hidden) {
             e.preventDefault();
             processUpload();
+            return;
+        }
+        if (e.key === "ArrowLeft" && screenConfig && !screenConfig.hidden) {
+            if (currentPreviewIndex > 0) goToPreview(currentPreviewIndex - 1);
+            return;
+        }
+        if (e.key === "ArrowRight" && screenConfig && !screenConfig.hidden) {
+            if (currentPreviewIndex < loadedFiles.length - 1) goToPreview(currentPreviewIndex + 1);
             return;
         }
     });
