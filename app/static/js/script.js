@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const folioDisplay     = document.getElementById("folio-display");
     const startNumberInput = document.getElementById("start_number");
+    const cornerSelect     = document.getElementById("corner");
 
     const previewMessage   = document.getElementById("preview-message");
     const previewImage     = document.getElementById("preview-image");
@@ -70,7 +71,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const PREVIEW_DELAY  = 750;
     let previewTimer = null;
 
-    // Utilidades
+    // Mapa de esquinas a iconos de flecha
+    const CORNER_ICONS = {
+        "bottom-right": "↘",
+        "bottom-left":  "↙",
+        "top-right":    "↗",
+        "top-left":     "↖",
+    };
+
+    function getCornerIcon() {
+        const val = cornerSelect ? cornerSelect.value : "bottom-right";
+        return CORNER_ICONS[val] || "↘";
+    }
+
+
+    // UTILIDADES
 
     function updateFolioDisplay() {
         const n = parseInt(startNumberInput.value) || 1;
@@ -317,7 +332,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return startNumber + accumulated;
     }
 
-    // Render File List
+
+    // RENDER FILE LIST
 
     function renderFileList() {
         if (loadedFiles.length === 0) {
@@ -332,6 +348,8 @@ document.addEventListener("DOMContentLoaded", () => {
         clearAllBtn.hidden = false;
         fileList.hidden = false;
 
+        const cornerIcon = getCornerIcon();
+
         fileList.innerHTML = loadedFiles.map((f, i) => `
             <div class="file-list__item ${i === currentPreviewIndex ? "file-list__item--active" : ""}"
                  data-index="${i}" draggable="true">
@@ -339,6 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="file-list__icon">📄</span>
                 <span class="file-list__name ${f._corrupt ? "file-list__name--corrupt" : ""}">${f.name}${f._corrupt ? " ⚠" : ""}</span>
                 <span class="file-list__meta">${f._pages ? f._pages + " págs · " : ""}${(f.size / (1024 * 1024)).toFixed(2)} MB</span>
+                <span class="file-list__corner" title="Esquina del folio">${cornerIcon}</span>
                 <button type="button" class="file-list__remove" data-index="${i}">✕</button>
             </div>
         `).join("");
@@ -349,6 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 loadedFiles.splice(idx, 1);
                 renderFileList();
                 updateSubmitState();
+                updateFolioRange();
 
                 if (loadedFiles.length === 0) {
                     screenUpload.hidden = false;
@@ -462,7 +482,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
     }
 
-    // Preview
+
+    // PREVIEW
 
     async function requestPreview() {
         if (!fileInput.files.length) return;
@@ -506,7 +527,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }, PREVIEW_DELAY);
     }
 
-    // Upload
+
+    // UPLOAD
 
     function handleSubmit(event) {
         event.preventDefault();
@@ -615,7 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-   // Eventos
+    // EVENTOS
 
     dropzone.addEventListener("dragover",  (e) => { e.preventDefault(); dropzone.classList.add("dropzone--highlight"); });
     dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("dropzone--highlight"); });
@@ -638,6 +660,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ctrl.addEventListener("change", requestPreview);
         ctrl.addEventListener("change", updateFolioDisplay);
         ctrl.addEventListener("change", saveConfig);
+        // Actualizar iconito de esquina en tiempo real al cambiar el select
+        if (ctrl.name === "corner") {
+            ctrl.addEventListener("change", renderFileList);
+        }
         if (ctrl.type === "number" || ctrl.type === "text") {
             ctrl.addEventListener("input", requestPreview);
             ctrl.addEventListener("input", updateFolioDisplay);

@@ -1,6 +1,7 @@
 import os
 import io
 import uuid
+import time
 import zipfile
 from flask import (
     Blueprint, render_template, request,
@@ -30,6 +31,21 @@ def get_temp_folder():
     return current_app.config["TEMP_FOLDER"]
 
 
+def cleanup_temp_files(temp_folder, max_age_minutes=30):
+    """Elimina archivos temporales con más de max_age_minutes minutos de antigüedad."""
+    if not os.path.exists(temp_folder):
+        return
+    now = time.time()
+    cutoff = now - (max_age_minutes * 60)
+    for filename in os.listdir(temp_folder):
+        path = os.path.join(temp_folder, filename)
+        try:
+            if os.path.isfile(path) and os.path.getmtime(path) < cutoff:
+                os.remove(path)
+        except OSError:
+            pass
+
+
 def parse_form_params(form, suffix=""):
     def field(name):
         return form.get(f"{name}{suffix}")
@@ -57,6 +73,9 @@ def parse_form_params(form, suffix=""):
 
 @main.route("/", methods=["GET", "POST"])
 def index():
+    # Limpieza periódica en cada visita al inicio
+    cleanup_temp_files(current_app.config["TEMP_FOLDER"])
+
     if request.method == "POST":
         file = request.files.get("pdf_file")
 
@@ -67,11 +86,11 @@ def index():
         if not file.filename.lower().endswith(".pdf"):
             flash("El archivo debe ser un PDF.", "error")
             return redirect(url_for("main.index"))
-        
+
         file.seek(0, os.SEEK_END)
         file_size = file.tell()
         file.seek(0)
-        
+
         if file_size == 0:
             flash("El archivo está vacío.", "error")
             return redirect(url_for("main.index"))
@@ -170,6 +189,7 @@ def preview():
 def instructions():
     return render_template("instructions.html")
 
+
 @main.route("/history")
 def history():
     log_path = os.path.join(current_app.config["LOGS_FOLDER"], "folios.txt")
@@ -178,19 +198,22 @@ def history():
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        
+
         for line in reversed(lines):
             line = line.strip()
-            if line:
-                parts = line.split(" | ")
-                if len(parts) >= 4:
-                    entries.append({
-                        "date":     parts[0],
-                        "status":   parts[1],
-                        "folios":   parts[2],
-                        "pages":    parts[3],
-                        "filename": parts[5].replace("File: ", "") if len(parts) >= 6 else "—",
-                    })
+            if not line:
+                continue
+            parts = line.split(" | ")
+            if len(parts) >= 4:
+                entries.append({
+                    "date":     parts[0],
+                    "status":   parts[1],
+                    "folios":   parts[2],
+                    "pages":    parts[3],
+                    "corner":   parts[4].replace("Corner: ", "") if len(parts) >= 5 else "—",
+                    "filename": parts[5].replace("File: ", "") if len(parts) >= 6 else "—",
+                    "batch":    parts[6].replace("Batch: ", "") if len(parts) >= 7 else None,
+                })
 
     return render_template("history.html", entries=entries)
 
@@ -204,11 +227,12 @@ def foliar_multiple():
 
     params = parse_form_params(request.form)
     temp_folder = get_temp_folder()
-    log_folder = current_app.config["LOGS_FOLDER"]
+    log_folder  = current_app.config["LOGS_FOLDER"]
 
     zip_buffer = io.BytesIO()
     errores = []
     current_number = params["start_number"]
+    batch_size = 0
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
@@ -226,11 +250,10 @@ def foliar_multiple():
                     while chunk := file.read(8192):
                         f.write(chunk)
 
-                # Contar paginas para avanzar el folio
                 from pypdf import PdfReader
-                reader = PdfReader(temp_in)
+                reader   = PdfReader(temp_in)
                 start_idx = max(0, params["start_page"] - 1)
-                end_idx = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
+                end_idx   = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
                 pages_to_folio = end_idx - start_idx
 
                 file_params = dict(params)
@@ -242,12 +265,14 @@ def foliar_multiple():
                     preview_mode=False,
                     log_folder=log_folder,
                     filename=safe_name,
+                    batch=len(files),
                     **file_params,
                 )
 
                 if success and os.path.exists(temp_out):
                     zf.write(temp_out, f"Foliado_{safe_name}")
                     current_number += pages_to_folio
+                    batch_size += 1
                 else:
                     errores.append(safe_name)
 
@@ -271,8 +296,8 @@ def foliar_multiple():
         download_name="Foliados.zip",
     )
 
-    
-# Error 
+
+# Errors
 @main.app_errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404

@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Historial - Foliador PDF{% endblock %}
-
 {% block content %}
 <header class="header">
     <div class="header__content">
@@ -12,15 +10,12 @@
         <a href="/" class="header__link">Ir al Foliador</a>
     </div>
 </header>
-
 <main class="main">
     <div class="history">
-
         <div class="history__header">
             <h2 class="history__title">Historial de operaciones</h2>
             <span class="history__count">{{ entries|length }} registros</span>
         </div>
-
         {% if entries %}
         <table class="history__table">
             <thead>
@@ -28,8 +23,10 @@
                     <th>Fecha y hora</th>
                     <th>Estado</th>
                     <th>Folios</th>
-                    <th>Paginas</th>
+                    <th>Páginas</th>
+                    <th>Esquina</th>
                     <th>Archivo</th>
+                    <th>Lote</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,21 +40,28 @@
                     </td>
                     <td class="history__folios">{{ entry.folios }}</td>
                     <td class="history__pages">{{ entry.pages }}</td>
+                    <td class="history__corner">{{ entry.corner }}</td>
                     <td class="history__filename">{{ entry.filename }}</td>
+                    <td class="history__batch">
+                        {% if entry.batch %}
+                            {{ entry.batch }} archivos
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
         <div class="history__empty">
-            <p>No hay operaciones registradas todavia.</p>
+            <p>No hay operaciones registradas todavía.</p>
+            <a href="/" class="header__link" style="margin-top: 16px; display: inline-block;">Ir al Foliador</a>
         </div>
         {% endif %}
-
     </div>
 </main>
-
 <footer class="footer">
-        <p>© 2026 Foliador PDF · Servyre · Desarrollado por Saúl Caballero🛡️</p>
+    <p>© 2026 Foliador PDF · Servyre · Desarrollado por Saúl Caballero🛡️</p>
 </footer>
 {% endblock %}

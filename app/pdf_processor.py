@@ -15,11 +15,12 @@ def _log(folder, level, message):
         f.write(entry)
 
 
-def log_success(folder, start_number, pages, corner, filename=""):
-    end_number = start_number + pages - 1
+def log_success(folder, start_number, pages, corner, filename="", batch=None):
+    end_number   = start_number + pages - 1
     filename_str = f" | File: {filename}" if filename else ""
+    batch_str    = f" | Batch: {batch}" if batch else ""
     _log(folder, "SUCCESS",
-         f"Folios: {start_number:04} to {end_number:04} | Pages: {pages} | Corner: {corner}{filename_str}")
+         f"Folios: {start_number:04} to {end_number:04} | Pages: {pages} | Corner: {corner}{filename_str}{batch_str}")
 
 
 def log_error(folder, message, detail=""):
@@ -36,10 +37,10 @@ def _create_folio_overlay(page_width, page_height, folio_text,
     margin = offset_cm * cm
 
     if "right" in corner:
-        x = page_width - margin
+        x    = page_width - margin
         draw = c.drawRightString
     else:
-        x = margin
+        x    = margin
         draw = c.drawString
 
     if "bottom" in corner:
@@ -64,7 +65,8 @@ def _create_folio_overlay(page_width, page_height, folio_text,
 def add_folios(input_path, output_path, log_folder,
                font="Courier-Bold", font_size=14, start_number=1,
                offset_cm=1.0, corner="bottom-right", orientation="horizontal",
-               start_page=1, end_page=None, preview_mode=False, filename=""):
+               start_page=1, end_page=None, preview_mode=False,
+               filename="", batch=None):
 
     try:
         reader = PdfReader(input_path)
@@ -74,7 +76,7 @@ def add_folios(input_path, output_path, log_folder,
             return False
 
         writer = PdfWriter()
-        total = len(reader.pages)
+        total  = len(reader.pages)
 
         start_idx = max(0, start_page - 1)
         end_idx   = min(total, end_page if end_page else total)
@@ -94,7 +96,6 @@ def add_folios(input_path, output_path, log_folder,
         for page in pages_to_folio:
             folio_text = f"{current_number:04}"
 
-            # Normalizar rotacion para coordenadas predecibles
             page.transfer_rotation_to_content()
 
             width  = float(page.mediabox.width)
@@ -114,7 +115,7 @@ def add_folios(input_path, output_path, log_folder,
             writer.write(f)
 
         if not preview_mode:
-            log_success(log_folder, start_number, count, corner, filename)
+            log_success(log_folder, start_number, count, corner, filename, batch)
 
         return True
 
