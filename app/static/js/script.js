@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentPreviewIndex = 0;
     let loadedFiles = [];
+    let toastCountdownInterval = null;
 
     const controls = form.querySelectorAll(
         "input:not([type='hidden']):not(#pdf-file-input), select"
@@ -162,18 +163,66 @@ document.addEventListener("DOMContentLoaded", () => {
         clearAllBtn.hidden = true;
     }
 
-    function showToast(message, delay = 3500) {
+    // Toast con contador regresivo y botón "Foliar de nuevo"
+    function showToast(message, seconds = 5) {
+        if (toastCountdownInterval) {
+            clearInterval(toastCountdownInterval);
+            toastCountdownInterval = null;
+        }
+
+        let remaining = seconds;
+
+        function renderToast() {
+            toastMessage.innerHTML = `
+                ${message} · cerrando en ${remaining}s
+                <button id="toast-retry-btn" style="
+                    margin-left:16px;
+                    background:transparent;
+                    border:1px solid currentColor;
+                    border-radius:4px;
+                    color:inherit;
+                    font-family:inherit;
+                    font-size:0.82rem;
+                    font-weight:600;
+                    padding:4px 10px;
+                    cursor:pointer;
+                ">Foliar de nuevo</button>
+            `;
+
+            const retryBtn = document.getElementById("toast-retry-btn");
+            if (retryBtn) {
+                retryBtn.addEventListener("click", () => {
+                    clearInterval(toastCountdownInterval);
+                    toastCountdownInterval = null;
+                    hideToast();
+                    window.location.reload();
+                });
+            }
+        }
+
+        function hideToast() {
+            toast.classList.remove("toast--visible");
+            toast.setAttribute("hidden", "");
+            toastMessage.innerHTML = "";
+        }
+
         setTimeout(() => {
-            toastMessage.textContent = message;
             toast.removeAttribute("hidden");
             toast.classList.add("toast--visible");
-            setTimeout(() => {
-                toast.classList.remove("toast--visible");
-                toast.setAttribute("hidden", "");
-                toastMessage.textContent = "";
-                window.location.reload();
-            }, delay);
-        }, 1500);
+            renderToast();
+
+            toastCountdownInterval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(toastCountdownInterval);
+                    toastCountdownInterval = null;
+                    hideToast();
+                    window.location.reload();
+                } else {
+                    renderToast();
+                }
+            }, 1000);
+        }, 1200);
     }
 
     async function showConfirmModal() {
@@ -217,7 +266,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         confirmModal.hidden = false;
-        // Foco al botón OK para que Enter lo confirme
         confirmOk.focus();
     }
 
@@ -295,7 +343,6 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `).join("");
 
-        // Quitar archivos
         fileList.querySelectorAll(".file-list__remove").forEach(btn => {
             btn.addEventListener("click", () => {
                 const idx = parseInt(btn.dataset.index);
@@ -316,7 +363,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Drag & drop para reordenar
         let dragSrcIndex = null;
 
         fileList.querySelectorAll(".file-list__item").forEach(item => {
@@ -363,7 +409,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Info general
         const total   = loadedFiles.reduce((acc, f) => acc + f.size, 0);
         const totalMB = total / (1024 * 1024);
         const warningMsg = loadedFiles.length > 20 || totalMB > 500
@@ -506,7 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    showToast("PDF cargado correctamente para descargar");
+                    showToast("✓ PDF listo");
                 } else {
                     alert(`Error ${xhr.status} al procesar el archivo.`);
                     window.location.reload();
@@ -551,7 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    showToast("ZIP cargado correctamente para descargar");
+                    showToast(`✓ ZIP listo (${loadedFiles.length} archivos)`);
                 } else {
                     alert(`Error ${xhr.status} al procesar los archivos.`);
                     window.location.reload();
@@ -570,9 +615,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Eventos
+   // Eventos
 
-    // Dropzone
     dropzone.addEventListener("dragover",  (e) => { e.preventDefault(); dropzone.classList.add("dropzone--highlight"); });
     dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("dropzone--highlight"); });
     dropzone.addEventListener("drop", (e) => {
@@ -590,7 +634,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fileInput.addEventListener("change", () => requestPreview());
 
-    // Controles del formulario
     controls.forEach(ctrl => {
         ctrl.addEventListener("change", requestPreview);
         ctrl.addEventListener("change", updateFolioDisplay);
@@ -603,7 +646,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Carousel
     carouselPrev.addEventListener("click", () => {
         if (currentPreviewIndex > 0) goToPreview(currentPreviewIndex - 1);
     });
@@ -611,15 +653,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentPreviewIndex < loadedFiles.length - 1) goToPreview(currentPreviewIndex + 1);
     });
 
-    // Teclado: flechas en carousel
     document.addEventListener("keydown", (e) => {
-        // Escape: cerrar modal de confirmación
         if (e.key === "Escape" && !confirmModal.hidden) {
             confirmModal.hidden = true;
             return;
         }
-
-        // Enter: confirmar modal (ya se maneja con focus en confirmOk, pero por si acaso)
         if (e.key === "Enter" && !confirmModal.hidden) {
             e.preventDefault();
             processUpload();
@@ -627,18 +665,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Ordenar
     sortAZ.addEventListener("click", () => sortFiles("az"));
     sortZA.addEventListener("click", () => sortFiles("za"));
 
-    // Form
     form.addEventListener("submit", handleSubmit);
 
-    // Confirm modal
     confirmCancel.addEventListener("click", () => { confirmModal.hidden = true; });
     confirmOk.addEventListener("click", processUpload);
 
-    // Theme toggle
     themeToggle.addEventListener("click", () => {
         const isLight = document.body.classList.toggle("theme--light");
         themeToggle.textContent = isLight ? "🌙 Oscuro" : "☀️ Claro";
@@ -650,7 +684,6 @@ document.addEventListener("DOMContentLoaded", () => {
         themeToggle.textContent = "🌙 Oscuro";
     }
 
-    // Init
     updateSubmitState();
     updateFolioDisplay();
     loadConfig();
