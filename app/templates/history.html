@@ -1,67 +1,279 @@
 {% extends "base.html" %}
 {% block title %}Historial - Foliador PDF{% endblock %}
 {% block content %}
+
 <header class="header">
     <div class="header__content">
         <div>
             <h1 class="header__title">Foliador PDF - Servyre</h1>
             <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
         </div>
-        <a href="/" class="header__link">Ir al Foliador</a>
+        <a href="/" class="header__link">← Ir al Foliador</a>
     </div>
 </header>
+
 <main class="main">
     <div class="history">
+
+        <!-- HEADER -->
         <div class="history__header">
-            <h2 class="history__title">Historial de operaciones</h2>
-            <span class="history__count">{{ entries|length }} registros</span>
+            <div class="history__header-left">
+                <h2 class="history__title">Historial de operaciones</h2>
+                <div class="history__stats">
+                    <span class="history__stat">
+                        <strong>{{ total_entries }}</strong> registros totales
+                    </span>
+                    <span class="history__stat">
+                        <strong>{{ "{:,}".format(total_pages) }}</strong> páginas foliadas en total
+                    </span>
+                    {% if entries|length != total_entries %}
+                    <span class="history__stat history__stat--filtered">
+                        {{ entries|length }} mostrados (filtrado)
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="history__header-actions">
+                <form method="POST" action="/history/delete-all" id="delete-all-form" style="display:inline;">
+                    <button type="button" class="btn btn--danger" id="delete-all-btn">
+                        🗑 Borrar todo
+                    </button>
+                </form>
+            </div>
         </div>
+
+        <!-- FILTROS -->
+        <form method="GET" action="/history" class="history__filters" id="filter-form">
+            <div class="history__filter-row">
+                <div class="history__filter-field">
+                    <label class="history__filter-label">Estado</label>
+                    <select name="status" class="history__filter-input">
+                        <option value="">Todos</option>
+                        <option value="SUCCESS" {% if filters.get('status') == 'SUCCESS' %}selected{% endif %}>SUCCESS</option>
+                        <option value="ERROR"   {% if filters.get('status') == 'ERROR'   %}selected{% endif %}>ERROR</option>
+                    </select>
+                </div>
+                <div class="history__filter-field">
+                    <label class="history__filter-label">Archivo</label>
+                    <input type="text" name="filename" class="history__filter-input"
+                           placeholder="Buscar por nombre..."
+                           value="{{ filters.get('filename', '') }}">
+                </div>
+                <div class="history__filter-field">
+                    <label class="history__filter-label">Desde</label>
+                    <input type="date" name="date_from" class="history__filter-input"
+                           value="{{ filters.get('date_from', '') }}">
+                </div>
+                <div class="history__filter-field">
+                    <label class="history__filter-label">Hasta</label>
+                    <input type="date" name="date_to" class="history__filter-input"
+                           value="{{ filters.get('date_to', '') }}">
+                </div>
+                <div class="history__filter-actions">
+                    <button type="submit" class="btn btn--primary" style="padding: 9px 18px;">Filtrar</button>
+                    <a href="/history" class="btn btn--secondary">Limpiar</a>
+                </div>
+            </div>
+        </form>
+
+        <!-- EXPORTAR -->
+        <div class="history__export">
+            <span class="history__export-label">Exportar {{ entries|length }} registros:</span>
+            <a href="/history/export?format=csv{{ '&status=' + filters.get('status','') if filters.get('status') }}{{ '&filename=' + filters.get('filename','') if filters.get('filename') }}{{ '&date_from=' + filters.get('date_from','') if filters.get('date_from') }}{{ '&date_to=' + filters.get('date_to','') if filters.get('date_to') }}"
+               class="btn btn--secondary">⬇ CSV</a>
+            <a href="/history/export?format=xlsx{{ '&status=' + filters.get('status','') if filters.get('status') }}{{ '&filename=' + filters.get('filename','') if filters.get('filename') }}{{ '&date_from=' + filters.get('date_from','') if filters.get('date_from') }}{{ '&date_to=' + filters.get('date_to','') if filters.get('date_to') }}"
+               class="btn btn--secondary">⬇ Excel</a>
+        </div>
+
+        <!-- TABLA -->
         {% if entries %}
-        <table class="history__table">
-            <thead>
-                <tr>
-                    <th>Fecha y hora</th>
-                    <th>Estado</th>
-                    <th>Folios</th>
-                    <th>Páginas</th>
-                    <th>Esquina</th>
-                    <th>Archivo</th>
-                    <th>Lote</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in entries %}
-                <tr>
-                    <td class="history__date">{{ entry.date }}</td>
-                    <td>
-                        <span class="history__status history__status--{{ entry.status | lower }}">
-                            {{ entry.status }}
-                        </span>
-                    </td>
-                    <td class="history__folios">{{ entry.folios }}</td>
-                    <td class="history__pages">{{ entry.pages }}</td>
-                    <td class="history__corner">{{ entry.corner }}</td>
-                    <td class="history__filename">{{ entry.filename }}</td>
-                    <td class="history__batch">
-                        {% if entry.batch %}
-                            {{ entry.batch }} archivos
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="history__table-wrapper">
+            <table class="history__table" id="history-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-col="0">Fecha y hora <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="1">Estado <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="2">Folios <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="3">Páginas <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="4">Esquina <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="5">Archivo <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="6">Lote <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="7">Duración <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-col="8">IP <span class="sort-icon">↕</span></th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr data-index="{{ entry.index }}">
+                        <td class="history__date">{{ entry.date }}</td>
+                        <td>
+                            <span class="history__status history__status--{{ entry.status | lower }}">
+                                {{ entry.status }}
+                            </span>
+                        </td>
+                        <td class="history__folios">{{ entry.folios }}</td>
+                        <td class="history__pages">{{ entry.pages }}</td>
+                        <td class="history__corner">{{ entry.corner }}</td>
+                        <td class="history__filename">{{ entry.filename }}</td>
+                        <td class="history__batch">
+                            {% if entry.batch %}{{ entry.batch }} archivos{% else %}—{% endif %}
+                        </td>
+                        <td class="history__duration">{{ entry.duration }}</td>
+                        <td class="history__ip">{{ entry.ip }}</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn--danger history__delete-row"
+                                    data-index="{{ entry.index }}"
+                                    style="padding: 4px 10px; font-size: 0.75rem;">
+                                ✕
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="history__empty">
-            <p>No hay operaciones registradas todavía.</p>
-            <a href="/" class="header__link" style="margin-top: 16px; display: inline-block;">Ir al Foliador</a>
+            <p>No hay registros que coincidan con los filtros.</p>
+            <a href="/history" class="btn btn--secondary" style="margin-top: 16px; display: inline-block;">
+                Ver todos los registros
+            </a>
         </div>
         {% endif %}
+
     </div>
 </main>
+
 <footer class="footer">
-    <p>© 2026 Foliador PDF · Servyre · Desarrollado por Saúl Caballero🛡️ · v1.3.0</p>
+    <p>© 2026 Foliador PDF · Servyre · v1.3.0 · Desarrollado por Saúl Caballero🛡️</p>
 </footer>
+
+<!-- Modal confirmación borrar todo -->
+<div id="confirm-delete-all-modal" class="modal" hidden>
+    <div class="modal__box">
+        <h3 class="modal__title">¿Borrar todo el historial?</h3>
+        <p class="modal__body">Esta acción no se puede deshacer. Se eliminarán todos los registros del log.</p>
+        <div class="confirm-modal__actions">
+            <button type="button" id="confirm-delete-cancel" class="btn btn--secondary">Cancelar</button>
+            <button type="button" id="confirm-delete-ok" class="btn btn--danger">Sí, borrar todo</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" hidden>
+    <span id="toast-message"></span>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    // --- BORRAR TODO ---
+    const deleteAllBtn    = document.getElementById("delete-all-btn");
+    const deleteAllForm   = document.getElementById("delete-all-form");
+    const deleteAllModal  = document.getElementById("confirm-delete-all-modal");
+    const deleteCancelBtn = document.getElementById("confirm-delete-cancel");
+    const deleteOkBtn     = document.getElementById("confirm-delete-ok");
+
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener("click", () => {
+            deleteAllModal.hidden = false;
+        });
+    }
+
+    if (deleteCancelBtn) {
+        deleteCancelBtn.addEventListener("click", () => {
+            deleteAllModal.hidden = true;
+        });
+    }
+
+    if (deleteOkBtn) {
+        deleteOkBtn.addEventListener("click", () => {
+            deleteAllForm.submit();
+        });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && deleteAllModal && !deleteAllModal.hidden) {
+            deleteAllModal.hidden = true;
+        }
+    });
+
+    // --- BORRAR FILA INDIVIDUAL ---
+    document.querySelectorAll(".history__delete-row").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const lineIndex = btn.dataset.index;
+            if (!confirm("¿Eliminar este registro?")) return;
+
+            try {
+                const res = await fetch(`/history/delete/${lineIndex}`, { method: "POST" });
+                const data = await res.json();
+                if (data.ok) {
+                    btn.closest("tr").remove();
+                    showToast("Registro eliminado");
+                } else {
+                    alert("Error al eliminar: " + (data.error || "desconocido"));
+                }
+            } catch (e) {
+                alert("Error de red.");
+            }
+        });
+    });
+
+    // --- ORDENAR COLUMNAS ---
+    const table = document.getElementById("history-table");
+    if (table) {
+        let sortCol = -1;
+        let sortAsc = true;
+
+        table.querySelectorAll("th.sortable").forEach(th => {
+            th.style.cursor = "pointer";
+            th.addEventListener("click", () => {
+                const col = parseInt(th.dataset.col);
+                if (sortCol === col) {
+                    sortAsc = !sortAsc;
+                } else {
+                    sortCol = col;
+                    sortAsc = true;
+                }
+
+                // Resetear iconos
+                table.querySelectorAll(".sort-icon").forEach(icon => icon.textContent = "↕");
+                th.querySelector(".sort-icon").textContent = sortAsc ? "↑" : "↓";
+
+                const tbody = table.querySelector("tbody");
+                const rows  = Array.from(tbody.querySelectorAll("tr"));
+
+                rows.sort((a, b) => {
+                    const aVal = a.cells[col]?.textContent.trim() || "";
+                    const bVal = b.cells[col]?.textContent.trim() || "";
+                    const result = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: "base" });
+                    return sortAsc ? result : -result;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    }
+
+    // --- TOAST ---
+    function showToast(message) {
+        const toast   = document.getElementById("toast");
+        const toastMsg = document.getElementById("toast-message");
+        if (!toast) return;
+        toastMsg.textContent = message;
+        toast.removeAttribute("hidden");
+        toast.classList.add("toast--visible");
+        setTimeout(() => {
+            toast.classList.remove("toast--visible");
+            toast.setAttribute("hidden", "");
+        }, 3000);
+    }
+
+});
+</script>
 {% endblock %}

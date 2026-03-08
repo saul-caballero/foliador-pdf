@@ -1,4 +1,5 @@
 import os
+import time
 from io import BytesIO
 from datetime import datetime
 
@@ -9,18 +10,28 @@ from reportlab.lib.units import cm
 
 def _log(folder, level, message):
     filename = "folios.txt" if level == "SUCCESS" else "errors.txt"
-    path = os.path.join(folder, filename)
+    path  = os.path.join(folder, filename)
     entry = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | {level} | {message}\n"
     with open(path, "a", encoding="utf-8") as f:
         f.write(entry)
 
 
-def log_success(folder, start_number, pages, corner, filename="", batch=None):
+CORNER_LABELS = {
+    "bottom-right": "Abajo derecha",
+    "bottom-left":  "Abajo izquierda",
+    "top-right":    "Arriba derecha",
+    "top-left":     "Arriba izquierda",
+}
+
+def log_success(folder, start_number, pages, corner, filename="", batch=None, duration=None, client_ip=None):
     end_number   = start_number + pages - 1
-    filename_str = f" | File: {filename}" if filename else ""
-    batch_str    = f" | Batch: {batch}" if batch else ""
+    corner_label = CORNER_LABELS.get(corner, corner)
+    filename_str = f" | File: {filename}"   if filename   else " | File: —"
+    batch_str    = f" | Batch: {batch}"     if batch      else " | Batch: Individual"
+    duration_str = f" | Duration: {duration:.1f}s" if duration is not None else " | Duration: —"
+    ip_str       = f" | IP: {client_ip}"    if client_ip  else " | IP: —"
     _log(folder, "SUCCESS",
-         f"Folios: {start_number:04} to {end_number:04} | Pages: {pages} | Corner: {corner}{filename_str}{batch_str}")
+         f"Folios: {start_number:04} - {end_number:04} | Pages: {pages} | Corner: {corner_label}{filename_str}{batch_str}{duration_str}{ip_str}")
 
 
 def log_error(folder, message, detail=""):
@@ -66,7 +77,9 @@ def add_folios(input_path, output_path, log_folder,
                font="Courier-Bold", font_size=14, start_number=1,
                offset_cm=1.0, corner="bottom-right", orientation="horizontal",
                start_page=1, end_page=None, preview_mode=False,
-               filename="", batch=None):
+               filename="", batch=None, client_ip=None):
+
+    t_start = time.time()
 
     try:
         reader = PdfReader(input_path)
@@ -115,7 +128,9 @@ def add_folios(input_path, output_path, log_folder,
             writer.write(f)
 
         if not preview_mode:
-            log_success(log_folder, start_number, count, corner, filename, batch)
+            duration = time.time() - t_start
+            log_success(log_folder, start_number, count, corner,
+                        filename, batch, duration, client_ip)
 
         return True
 

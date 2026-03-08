@@ -1,11 +1,13 @@
 import os
 import io
+import csv
 import uuid
 import time
 import zipfile
+from datetime import datetime
 from flask import (
     Blueprint, render_template, request,
-    send_file, redirect, url_for, flash, current_app
+    send_file, redirect, url_for, flash, current_app, jsonify
 )
 from werkzeug.utils import secure_filename
 
@@ -23,6 +25,14 @@ except ImportError:
     print("[WARNING] pdf2image not available. Preview disabled.")
     PDF_PREVIEW_AVAILABLE = False
 
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    XLSX_AVAILABLE = True
+except ImportError:
+    print("[WARNING] openpyxl not available. Excel export disabled.")
+    XLSX_AVAILABLE = False
+
 
 main = Blueprint("main", __name__)
 
@@ -31,8 +41,11 @@ def get_temp_folder():
     return current_app.config["TEMP_FOLDER"]
 
 
+def get_log_path():
+    return os.path.join(current_app.config["LOGS_FOLDER"], "folios.txt")
+
+
 def cleanup_temp_files(temp_folder, max_age_minutes=30):
-    """Elimina archivos temporales con más de max_age_minutes minutos de antigüedad."""
     if not os.path.exists(temp_folder):
         return
     now = time.time()
@@ -70,10 +83,71 @@ def parse_form_params(form, suffix=""):
         "orientation":  orientation,
     }
 
+def read_log_entries():
+    log_path = get_log_path()
+    entries = []
+    if not os.path.exists(log_path):
+        return entries
+
+    with open(log_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    for i, line in enumerate(reversed(lines)):
+        line = line.strip()
+        if not line:
+            continue
+        parts = [p.strip() for p in line.split(" | ")]
+
+        def get(idx, prefix=""):
+            if idx < len(parts):
+                return parts[idx].replace(prefix, "").strip()
+            return "—"
+
+        entries.append({
+            "index":    len(lines) - 1 - i,
+            "date":     get(0),
+            "status":   get(1),
+            "folios":   get(2),
+            "pages":    get(3),
+            "corner":   get(4, "Corner: "),
+            "filename": get(5, "File: "),
+            "batch":    get(6, "Batch: "),
+            "duration": get(7, "Duration: "),
+            "ip":       get(8, "IP: "),
+        })
+    return entries
+
+
+def apply_filters(entries, args):
+    status   = args.get("status", "").strip().upper()
+    filename = args.get("filename", "").strip().lower()
+    date_from = args.get("date_from", "").strip()
+    date_to   = args.get("date_to", "").strip()
+
+    result = []
+    for e in entries:
+        if status and e["status"].strip().upper() != status:
+            continue
+        if filename and filename not in e["filename"].lower():
+            continue
+        if date_from:
+            try:
+                if e["date"][:10] < date_from:
+                    continue
+            except Exception:
+                pass
+        if date_to:
+            try:
+                if e["date"][:10] > date_to:
+                    continue
+            except Exception:
+                pass
+        result.append(e)
+    return result
+
 
 @main.route("/", methods=["GET", "POST"])
 def index():
-    # Limpieza periódica en cada visita al inicio
     cleanup_temp_files(current_app.config["TEMP_FOLDER"])
 
     if request.method == "POST":
@@ -105,7 +179,8 @@ def index():
                 while chunk := file.read(8192):
                     f.write(chunk)
 
-            params = parse_form_params(request.form)
+            params    = parse_form_params(request.form)
+            client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
 
             success = add_folios(
                 input_path=temp_in,
@@ -113,6 +188,7 @@ def index():
                 preview_mode=False,
                 log_folder=current_app.config["LOGS_FOLDER"],
                 filename=safe_name,
+                client_ip=client_ip,
                 **params,
             )
 
@@ -178,7 +254,6 @@ def preview():
         img_io = io.BytesIO()
         images[0].save(img_io, format="PNG")
         img_io.seek(0)
-
         return send_file(img_io, mimetype="image/png")
 
     except Exception as e:
@@ -192,30 +267,118 @@ def instructions():
 
 @main.route("/history")
 def history():
-    log_path = os.path.join(current_app.config["LOGS_FOLDER"], "folios.txt")
-    entries = []
+    entries   = read_log_entries()
+    filtered  = apply_filters(entries, request.args)
 
+    total_pages = sum(
+        int(e["pages"].replace("Pages: ", "").strip())
+        for e in entries
+        if e["pages"].replace("Pages: ", "").strip().isdigit()
+    )
+
+    return render_template(
+        "history.html",
+        entries=filtered,
+        total_entries=len(entries),
+        total_pages=total_pages,
+        filters=request.args,
+    )
+
+
+@main.route("/history/delete/<int:line_index>", methods=["POST"])
+def history_delete_entry(line_index):
+    log_path = get_log_path()
+    if not os.path.exists(log_path):
+        return jsonify({"ok": False, "error": "Log not found"}), 404
+
+    with open(log_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    if line_index < 0 or line_index >= len(lines):
+        return jsonify({"ok": False, "error": "Index out of range"}), 400
+
+    lines.pop(line_index)
+
+    with open(log_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+    return jsonify({"ok": True})
+
+
+@main.route("/history/delete-all", methods=["POST"])
+def history_delete_all():
+    log_path = get_log_path()
     if os.path.exists(log_path):
-        with open(log_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("")
+    return redirect(url_for("main.history"))
 
-        for line in reversed(lines):
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split(" | ")
-            if len(parts) >= 4:
-                entries.append({
-                    "date":     parts[0],
-                    "status":   parts[1],
-                    "folios":   parts[2],
-                    "pages":    parts[3],
-                    "corner":   parts[4].replace("Corner: ", "") if len(parts) >= 5 else "—",
-                    "filename": parts[5].replace("File: ", "") if len(parts) >= 6 else "—",
-                    "batch":    parts[6].replace("Batch: ", "") if len(parts) >= 7 else None,
-                })
 
-    return render_template("history.html", entries=entries)
+@main.route("/history/export")
+def history_export():
+    fmt      = request.args.get("format", "csv").lower()
+    entries  = read_log_entries()
+    filtered = apply_filters(entries, request.args)
+
+    headers = ["Fecha", "Estado", "Folios", "Páginas", "Esquina", "Archivo", "Lote", "Duración (s)", "IP"]
+
+    def row(e):
+        return [
+            e["date"], e["status"], e["folios"], e["pages"],
+            e["corner"], e["filename"], e["batch"] or "—",
+            e["duration"], e["ip"],
+        ]
+
+    if fmt == "xlsx":
+        if not XLSX_AVAILABLE:
+            flash("openpyxl no está instalado. Ejecuta: pip install openpyxl", "error")
+            return redirect(url_for("main.history"))
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Historial"
+
+        header_font  = Font(bold=True, color="000000")
+        header_fill  = PatternFill("solid", fgColor="C8A020")
+        header_align = Alignment(horizontal="center")
+
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font  = header_font
+            cell.fill  = header_fill
+            cell.alignment = header_align
+
+        for e in filtered:
+            ws.append(row(e))
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 50)
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return send_file(
+            buf,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"historial_folios_{datetime.now().strftime('%Y%m%d')}.xlsx",
+        )
+
+    # CSV (default)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    for e in filtered:
+        writer.writerow(row(e))
+
+    buf.seek(0)
+    return send_file(
+        io.BytesIO(buf.getvalue().encode("utf-8-sig")),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name=f"historial_folios_{datetime.now().strftime('%Y%m%d')}.csv",
+    )
 
 
 @main.route("/foliar-multiple", methods=["POST"])
@@ -225,14 +388,14 @@ def foliar_multiple():
     if not files or all(f.filename == "" for f in files):
         return "No se recibieron archivos.", 400
 
-    params = parse_form_params(request.form)
+    params      = parse_form_params(request.form)
     temp_folder = get_temp_folder()
     log_folder  = current_app.config["LOGS_FOLDER"]
+    client_ip   = request.headers.get("X-Forwarded-For", request.remote_addr)
 
     zip_buffer = io.BytesIO()
-    errores = []
+    errores    = []
     current_number = params["start_number"]
-    batch_size = 0
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in files:
@@ -251,9 +414,9 @@ def foliar_multiple():
                         f.write(chunk)
 
                 from pypdf import PdfReader
-                reader   = PdfReader(temp_in)
-                start_idx = max(0, params["start_page"] - 1)
-                end_idx   = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
+                reader         = PdfReader(temp_in)
+                start_idx      = max(0, params["start_page"] - 1)
+                end_idx        = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
                 pages_to_folio = end_idx - start_idx
 
                 file_params = dict(params)
@@ -266,13 +429,13 @@ def foliar_multiple():
                     log_folder=log_folder,
                     filename=safe_name,
                     batch=len(files),
+                    client_ip=client_ip,
                     **file_params,
                 )
 
                 if success and os.path.exists(temp_out):
                     zf.write(temp_out, f"Foliado_{safe_name}")
                     current_number += pages_to_folio
-                    batch_size += 1
                 else:
                     errores.append(safe_name)
 
@@ -297,7 +460,6 @@ def foliar_multiple():
     )
 
 
-# Errors
 @main.app_errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
