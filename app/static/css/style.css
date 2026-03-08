@@ -603,6 +603,31 @@ label.btn--secondary input[type="file"] { display: none; }
     padding-top: 4px;
 }
 
+.onboarding__tips-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+}
+
+.onboarding__tips-list li {
+    padding-left: 16px;
+    position: relative;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.onboarding__tips-list li::before {
+    content: "·";
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+}
+
    /* History Page */
    
 .history { display: flex; flex-direction: column; gap: 20px; }

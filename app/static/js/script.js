@@ -791,8 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const onboardingOk     = document.getElementById("onboarding-ok");
 
     if (!localStorage.getItem("onboarding-seen")) {
-        const randomTip = ONBOARDING_TIPS[Math.floor(Math.random() * ONBOARDING_TIPS.length)];
-        onboardingTip.textContent = randomTip;
+        onboardingTip.innerHTML = ONBOARDING_TIPS.map(tip => `<li>${tip}</li>`).join("");
         onboardingModal.hidden = false;
     }
 
