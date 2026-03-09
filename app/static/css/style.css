@@ -526,6 +526,8 @@ label.btn--secondary input[type="file"] { display: none; }
 
 .modal__box--onboarding {
     max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
     text-align: left;
     gap: 16px;
 }
