@@ -24,7 +24,8 @@
                 <h3 class="step-card__title">Carga uno o varios PDFs</h3>
                 <p class="step-card__body">
                     Arrastra uno o varios archivos PDF a la zona de carga o haz clic para seleccionarlos.
-                    Cada archivo puede pesar hasta 2 GB cada uno individualmente. Si cargas varios, se descargarán juntos en un ZIP.
+                    Cada archivo puede pesar hasta 2 GB individualmente. Si cargas varios, se descargarán
+                    juntos en un archivo ZIP.
                 </p>
             </div>
             <div class="step-card">
@@ -32,31 +33,35 @@
                 <h3 class="step-card__title">Organiza los archivos</h3>
                 <p class="step-card__body">
                     Reordena los archivos arrastrándolos en la lista o usa los botones A-Z y Z-A.
-                    También puedes agregar más archivos o eliminar los que no necesites sin recargar la página.
+                    También puedes agregar más archivos o eliminar los que no necesites sin recargar
+                    la página.
                 </p>
             </div>
             <div class="step-card">
                 <span class="step-card__number">03</span>
                 <h3 class="step-card__title">Configura el foliado</h3>
                 <p class="step-card__body">
-                    Define el número de folio inicial, el rango de páginas a foliar y la esquina donde
-                    aparecerá el número. El rango estimado de folios se muestra automáticamente.
+                    Define el número de folio inicial, el rango de páginas a foliar, la esquina y el
+                    estilo del número. El rango estimado de folios se calcula automáticamente según
+                    las páginas detectadas en cada archivo.
                 </p>
             </div>
             <div class="step-card">
                 <span class="step-card__number">04</span>
                 <h3 class="step-card__title">Verifica la vista previa</h3>
                 <p class="step-card__body">
-                    La vista previa muestra la primera página foliada de cada archivo.
-                    Usa las flechas del carousel para revisar cada documento antes de procesar.
+                    La vista previa muestra la primera página foliada de cada archivo. Usa las flechas
+                    del carousel o las teclas izquierda y derecha para revisar cada documento antes
+                    de procesar.
                 </p>
             </div>
             <div class="step-card">
                 <span class="step-card__number">05</span>
                 <h3 class="step-card__title">Confirma y descarga</h3>
                 <p class="step-card__body">
-                    Al hacer clic en "Foliar y Descargar" se muestra un resumen con el número de archivos,
-                    páginas totales y rango de folios. Confirma para iniciar la descarga.
+                    Al hacer clic en "Foliar y Descargar" se muestra un resumen con el número de
+                    archivos, páginas totales y rango de folios. Confirma para iniciar el procesamiento
+                    y la descarga automática.
                 </p>
             </div>
             <div class="step-card">
@@ -64,27 +69,48 @@
                 <h3 class="step-card__title">Folios consecutivos entre archivos</h3>
                 <p class="step-card__body">
                     Al cargar varios archivos, los folios continúan automáticamente entre documentos.
-                    Si el primer PDF tiene 50 páginas, el segundo empieza en el folio 0051.
+                    Si el primer PDF tiene 50 páginas y empieza en 0001, el segundo comenzará en 0051.
+                </p>
+            </div>
+            <div class="step-card">
+                <span class="step-card__number">07</span>
+                <h3 class="step-card__title">Consulta el historial</h3>
+                <p class="step-card__body">
+                    Cada operación exitosa queda registrada en el historial con fecha, rango de folios,
+                    páginas procesadas, duración e IP del equipo que realizó el foliado. Puedes filtrar
+                    por estado, fecha o nombre de archivo, y exportar los registros a CSV o Excel.
+                </p>
+            </div>
+            <div class="step-card">
+                <span class="step-card__number">08</span>
+                <h3 class="step-card__title">Gestiona el historial</h3>
+                <p class="step-card__body">
+                    Desde la página de historial puedes eliminar registros individuales o borrar todo
+                    el historial. La exportación respeta los filtros activos, por lo que puedes exportar
+                    solo un rango de fechas o un archivo específico.
                 </p>
             </div>
         </div>
         <div class="instructions__notes">
             <h3 class="instructions__notes-title">Notas importantes</h3>
             <ul class="instructions__list">
-                <li>El folio se formatea siempre a 4 dígitos - ejemplo: 1 a 0001</li>
+                <li>El folio se formatea siempre a 4 dígitos - ejemplo: 1 se convierte en 0001</li>
                 <li>Puedes foliar solo un rango de páginas dejando el resto sin número</li>
                 <li>La vista previa tiene un límite de 30 MB para proteger el servidor</li>
                 <li>El PDF original no se modifica, siempre se genera un archivo nuevo</li>
                 <li>No se aceptan PDFs con contraseña</li>
-                <li>Los archivos con problemas se marcan con ⚠ en la lista antes de procesar</li>
+                <li>Los archivos con problemas se marcan con una advertencia en la lista antes de procesar</li>
                 <li>La configuración de estilo y posición se guarda automáticamente entre sesiones</li>
                 <li>Puedes cambiar entre modo oscuro y claro con el botón en el encabezado</li>
                 <li>PDFs escaneados con rotación de metadatos son soportados correctamente</li>
+                <li>El historial registra la IP del equipo, útil para auditoría en red local</li>
+                <li>La exportación a Excel incluye formato con encabezados destacados</li>
+                <li>Los archivos temporales del servidor se eliminan automáticamente cada 30 minutos</li>
             </ul>
         </div>
     </div>
 </main>
 <footer class="footer">
-    <p>© 2026 Foliador PDF · Servyre · Desarrollado por Saúl Caballero🛡️ · v1.3.0</p>
+    <p>© 2026 Foliador PDF · Servyre · v1.3.0</p>
 </footer>
 {% endblock %}

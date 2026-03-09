@@ -72,12 +72,12 @@ Buscar la linea "Direccion IPv4".
 ## Flujo de uso
 
 1. Abrir la aplicacion
-2. Arrastrar el archivo PDF a la zona de carga
-3. Verificar el nombre del archivo y numero de paginas detectados
-4. Configurar numero de folio inicial y rango de paginas
-5. Ajustar esquina, tamano de fuente y margen
-6. Verificar posicion en la vista previa
-7. Hacer clic en "Foliar y Descargar PDF"
+2. Arrastrar uno o varios archivos PDF a la zona de carga
+3. Reordenar los archivos si es necesario arrastrando en la lista
+4. Configurar numero de folio inicial, rango de paginas, esquina y estilo
+5. Verificar la posicion en la vista previa (carousel para multiples archivos)
+6. Hacer clic en "Foliar y Descargar"
+7. Confirmar el resumen y esperar la descarga automatica
 
 ---
 
@@ -95,24 +95,24 @@ Buscar la linea "Direccion IPv4".
 
     foliador-pdf/
     app/
-        __init__.py          Configuracion y factory de Flask
-        routes.py            Rutas HTTP
-        pdf_processor.py     Logica central de foliado
+        __init__.py           Configuracion y factory de Flask
+        routes.py             Rutas HTTP
+        pdf_processor.py      Logica central de foliado
         static/
-            css/style.css    Estilos
-            js/script.js     Interactividad del frontend
-            img/             Iconos e imagenes
+            css/style.css     Estilos
+            js/script.js      Interactividad del frontend
+            img/              Iconos e imagenes
         templates/
-            base.html        Plantilla base Jinja2
-            index.html       Interfaz principal
+            base.html         Plantilla base Jinja2
+            index.html        Interfaz principal
             instructions.html Pagina de instrucciones
-            history.html     Pagina de historial
-            404.html         Pagina de error 404
-            500.html         Pagina de error 500
-    iniciar.bat              Lanzador para Windows
-    foliador.spec            Configuracion de PyInstaller
-    run.py                   Punto de entrada del servidor
-    requirements.txt         Dependencias de Python
+            history.html      Pagina de historial
+            404.html          Pagina de error 404
+            500.html          Pagina de error 500
+    iniciar.bat               Lanzador para Windows
+    foliador.spec             Configuracion de PyInstaller
+    run.py                    Punto de entrada del servidor
+    requirements.txt          Dependencias de Python
 
 ---
 
@@ -139,15 +139,18 @@ Cada actualizacion del codigo requiere regenerar el ejecutable.
 | pdf2image   | Conversion de pagina PDF a imagen preview  |
 | Pillow      | Procesamiento de imagenes                  |
 | Waitress    | Servidor de produccion para Windows        |
+| openpyxl    | Exportacion de historial a Excel           |
 | Poppler     | Motor externo de renderizado PDF           |
 
 ---
 
-## Logs
+## Historial de operaciones
 
-Cada operacion exitosa se registra con el formato:
+Cada operacion exitosa se registra automaticamente con el siguiente formato:
 
-    2026-01-28 10:05:35 | SUCCESS | Folios: 0001 to 0456 | Pages: 456 | Corner: bottom-right | File: documento.pdf
+    2026-01-28 10:05:35 | SUCCESS | Folios: 0001 - 0456 | Pages: 456 | Corner: Abajo derecha | File: documento.pdf | Batch: Individual | Duration: 3.2s | IP: 192.168.1.5
+
+Los errores se registran en errors.txt dentro de la misma carpeta.
 
 Al ejecutar desde codigo fuente los logs se guardan en:
 
@@ -155,9 +158,13 @@ Al ejecutar desde codigo fuente los logs se guardan en:
 
 Al ejecutar desde el ejecutable los logs se guardan en:
 
-    foliador-logs/folios.txt  (junto al .exe)
+    foliador-logs/folios.txt
 
-Los errores se registran en errors.txt dentro de la misma carpeta.
+Desde la pagina /history es posible:
+
+- Filtrar por estado, nombre de archivo y rango de fechas
+- Exportar los registros filtrados a CSV o Excel
+- Eliminar registros individuales o borrar todo el historial
 
 ---
 
@@ -165,7 +172,10 @@ Los errores se registran en errors.txt dentro de la misma carpeta.
 
 - Waitress maneja multiples usuarios simultaneamente.
 - Si el ejecutable se abre dos veces, el segundo solo abre el navegador sin iniciar un servidor nuevo.
-- Los archivos temporales se eliminan automaticamente al cerrar el servidor.
+- Los archivos temporales del servidor se eliminan automaticamente cada 30 minutos.
 - La vista previa tiene un limite de 30 MB para proteger la RAM del servidor.
-- El limite de tamano de archivo para foliado es de 2 GB.
+- El limite de tamano de archivo para foliado es de 2 GB por archivo.
 - Los PDFs con contrasena son rechazados automaticamente.
+- PDFs escaneados con rotacion de metadatos son soportados correctamente.
+- Al foliar varios archivos los folios son consecutivos entre documentos.
+- La IP del cliente se registra en el historial, util para auditoria en red local.
