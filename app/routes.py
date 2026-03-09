@@ -277,7 +277,7 @@ def history():
     )
 
     # Paginación
-    PER_PAGE = 100
+    PER_PAGE = 50
     try:
         page = max(1, int(request.args.get("page", 1)))
     except ValueError:
