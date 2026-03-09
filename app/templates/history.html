@@ -52,25 +52,25 @@
                     <label class="history__filter-label">Estado</label>
                     <select name="status" class="history__filter-input">
                         <option value="">Todos</option>
-                        <option value="SUCCESS" {% if filters.get('status') == 'SUCCESS' %}selected{% endif %}>SUCCESS</option>
-                        <option value="ERROR"   {% if filters.get('status') == 'ERROR'   %}selected{% endif %}>ERROR</option>
+                        <option value="SUCCESS" {% if filters.get('status')=='SUCCESS' %}selected{% endif %}>SUCCESS
+                        </option>
+                        <option value="ERROR" {% if filters.get('status')=='ERROR' %}selected{% endif %}>ERROR</option>
                     </select>
                 </div>
                 <div class="history__filter-field">
                     <label class="history__filter-label">Archivo</label>
-                    <input type="text" name="filename" class="history__filter-input"
-                           placeholder="Buscar por nombre..."
-                           value="{{ filters.get('filename', '') }}">
+                    <input type="text" name="filename" class="history__filter-input" placeholder="Buscar por nombre..."
+                        value="{{ filters.get('filename', '') }}">
                 </div>
                 <div class="history__filter-field">
                     <label class="history__filter-label">Desde</label>
                     <input type="date" name="date_from" class="history__filter-input"
-                           value="{{ filters.get('date_from', '') }}">
+                        value="{{ filters.get('date_from', '') }}">
                 </div>
                 <div class="history__filter-field">
                     <label class="history__filter-label">Hasta</label>
                     <input type="date" name="date_to" class="history__filter-input"
-                           value="{{ filters.get('date_to', '') }}">
+                        value="{{ filters.get('date_to', '') }}">
                 </div>
                 <div class="history__filter-actions">
                     <button type="submit" class="btn btn--primary" style="padding: 9px 18px;">Filtrar</button>
@@ -83,9 +83,9 @@
         <div class="history__export">
             <span class="history__export-label">Exportar {{ entries|length }} registros:</span>
             <a href="/history/export?format=csv{{ '&status=' + filters.get('status','') if filters.get('status') }}{{ '&filename=' + filters.get('filename','') if filters.get('filename') }}{{ '&date_from=' + filters.get('date_from','') if filters.get('date_from') }}{{ '&date_to=' + filters.get('date_to','') if filters.get('date_to') }}"
-               class="btn btn--secondary">⬇ CSV</a>
+                class="btn btn--secondary">⬇ CSV</a>
             <a href="/history/export?format=xlsx{{ '&status=' + filters.get('status','') if filters.get('status') }}{{ '&filename=' + filters.get('filename','') if filters.get('filename') }}{{ '&date_from=' + filters.get('date_from','') if filters.get('date_from') }}{{ '&date_to=' + filters.get('date_to','') if filters.get('date_to') }}"
-               class="btn btn--secondary">⬇ Excel</a>
+                class="btn btn--secondary">⬇ Excel</a>
         </div>
 
         <!-- TABLA -->
@@ -125,10 +125,8 @@
                         <td class="history__duration">{{ entry.duration }}</td>
                         <td class="history__ip">{{ entry.ip }}</td>
                         <td>
-                            <button type="button"
-                                    class="btn btn--danger history__delete-row"
-                                    data-index="{{ entry.index }}"
-                                    style="padding: 4px 10px; font-size: 0.75rem;">
+                            <button type="button" class="btn btn--danger history__delete-row"
+                                data-index="{{ entry.index }}" style="padding: 4px 10px; font-size: 0.75rem;">
                                 ✕
                             </button>
                         </td>
@@ -143,6 +141,22 @@
             <a href="/history" class="btn btn--secondary" style="margin-top: 16px; display: inline-block;">
                 Ver todos los registros
             </a>
+        </div>
+        {% endif %}
+
+        {% if total_pages_nav > 1 %}
+        <div class="history__pagination">
+            {% if page > 1 %}
+            <a href="/history?page={{ page - 1 }}{% if filters.get('status') %}&status={{ filters.get('status') }}{% endif %}{% if filters.get('filename') %}&filename={{ filters.get('filename') }}{% endif %}{% if filters.get('date_from') %}&date_from={{ filters.get('date_from') }}{% endif %}{% if filters.get('date_to') %}&date_to={{ filters.get('date_to') }}{% endif %}" class="btn btn--secondary">Anterior</a>
+            {% endif %}
+
+            <span class="history__pagination-info">
+                Página {{ page }} de {{ total_pages_nav }} · {{ total_filtered }} registros
+            </span>
+
+            {% if page < total_pages_nav %}
+            <a href="/history?page={{ page + 1 }}{% if filters.get('status') %}&status={{ filters.get('status') }}{% endif %}{% if filters.get('filename') %}&filename={{ filters.get('filename') }}{% endif %}{% if filters.get('date_from') %}&date_from={{ filters.get('date_from') }}{% endif %}{% if filters.get('date_to') %}&date_to={{ filters.get('date_to') }}{% endif %}" class="btn btn--secondary">Siguiente</a>
+            {% endif %}
         </div>
         {% endif %}
 
@@ -173,111 +187,111 @@
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
-    // --- BORRAR TODO ---
-    const deleteAllBtn    = document.getElementById("delete-all-btn");
-    const deleteAllForm   = document.getElementById("delete-all-form");
-    const deleteAllModal  = document.getElementById("confirm-delete-all-modal");
-    const deleteCancelBtn = document.getElementById("confirm-delete-cancel");
-    const deleteOkBtn     = document.getElementById("confirm-delete-ok");
+        // --- BORRAR TODO ---
+        const deleteAllBtn = document.getElementById("delete-all-btn");
+        const deleteAllForm = document.getElementById("delete-all-form");
+        const deleteAllModal = document.getElementById("confirm-delete-all-modal");
+        const deleteCancelBtn = document.getElementById("confirm-delete-cancel");
+        const deleteOkBtn = document.getElementById("confirm-delete-ok");
 
-    if (deleteAllBtn) {
-        deleteAllBtn.addEventListener("click", () => {
-            deleteAllModal.hidden = false;
-        });
-    }
-
-    if (deleteCancelBtn) {
-        deleteCancelBtn.addEventListener("click", () => {
-            deleteAllModal.hidden = true;
-        });
-    }
-
-    if (deleteOkBtn) {
-        deleteOkBtn.addEventListener("click", () => {
-            deleteAllForm.submit();
-        });
-    }
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && deleteAllModal && !deleteAllModal.hidden) {
-            deleteAllModal.hidden = true;
+        if (deleteAllBtn) {
+            deleteAllBtn.addEventListener("click", () => {
+                deleteAllModal.hidden = false;
+            });
         }
-    });
 
-    // --- BORRAR FILA INDIVIDUAL ---
-    document.querySelectorAll(".history__delete-row").forEach(btn => {
-        btn.addEventListener("click", async () => {
-            const lineIndex = btn.dataset.index;
-            if (!confirm("¿Eliminar este registro?")) return;
+        if (deleteCancelBtn) {
+            deleteCancelBtn.addEventListener("click", () => {
+                deleteAllModal.hidden = true;
+            });
+        }
 
-            try {
-                const res = await fetch(`/history/delete/${lineIndex}`, { method: "POST" });
-                const data = await res.json();
-                if (data.ok) {
-                    btn.closest("tr").remove();
-                    showToast("Registro eliminado");
-                } else {
-                    alert("Error al eliminar: " + (data.error || "desconocido"));
-                }
-            } catch (e) {
-                alert("Error de red.");
+        if (deleteOkBtn) {
+            deleteOkBtn.addEventListener("click", () => {
+                deleteAllForm.submit();
+            });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && deleteAllModal && !deleteAllModal.hidden) {
+                deleteAllModal.hidden = true;
             }
         });
-    });
 
-    // --- ORDENAR COLUMNAS ---
-    const table = document.getElementById("history-table");
-    if (table) {
-        let sortCol = -1;
-        let sortAsc = true;
+        // BORRAR FILA INDIVIDUAL
+        document.querySelectorAll(".history__delete-row").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const lineIndex = btn.dataset.index;
+                if (!confirm("¿Eliminar este registro?")) return;
 
-        table.querySelectorAll("th.sortable").forEach(th => {
-            th.style.cursor = "pointer";
-            th.addEventListener("click", () => {
-                const col = parseInt(th.dataset.col);
-                if (sortCol === col) {
-                    sortAsc = !sortAsc;
-                } else {
-                    sortCol = col;
-                    sortAsc = true;
+                try {
+                    const res = await fetch(`/history/delete/${lineIndex}`, { method: "POST" });
+                    const data = await res.json();
+                    if (data.ok) {
+                        btn.closest("tr").remove();
+                        showToast("Registro eliminado");
+                    } else {
+                        alert("Error al eliminar: " + (data.error || "desconocido"));
+                    }
+                } catch (e) {
+                    alert("Error de red.");
                 }
-
-                // Resetear iconos
-                table.querySelectorAll(".sort-icon").forEach(icon => icon.textContent = "↕");
-                th.querySelector(".sort-icon").textContent = sortAsc ? "↑" : "↓";
-
-                const tbody = table.querySelector("tbody");
-                const rows  = Array.from(tbody.querySelectorAll("tr"));
-
-                rows.sort((a, b) => {
-                    const aVal = a.cells[col]?.textContent.trim() || "";
-                    const bVal = b.cells[col]?.textContent.trim() || "";
-                    const result = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: "base" });
-                    return sortAsc ? result : -result;
-                });
-
-                rows.forEach(row => tbody.appendChild(row));
             });
         });
-    }
 
-    // --- TOAST ---
-    function showToast(message) {
-        const toast   = document.getElementById("toast");
-        const toastMsg = document.getElementById("toast-message");
-        if (!toast) return;
-        toastMsg.textContent = message;
-        toast.removeAttribute("hidden");
-        toast.classList.add("toast--visible");
-        setTimeout(() => {
-            toast.classList.remove("toast--visible");
-            toast.setAttribute("hidden", "");
-        }, 3000);
-    }
+        // ORDENAR COLUMNAS
+        const table = document.getElementById("history-table");
+        if (table) {
+            let sortCol = -1;
+            let sortAsc = true;
 
-});
+            table.querySelectorAll("th.sortable").forEach(th => {
+                th.style.cursor = "pointer";
+                th.addEventListener("click", () => {
+                    const col = parseInt(th.dataset.col);
+                    if (sortCol === col) {
+                        sortAsc = !sortAsc;
+                    } else {
+                        sortCol = col;
+                        sortAsc = true;
+                    }
+
+                    // Resetear iconos
+                    table.querySelectorAll(".sort-icon").forEach(icon => icon.textContent = "↕");
+                    th.querySelector(".sort-icon").textContent = sortAsc ? "↑" : "↓";
+
+                    const tbody = table.querySelector("tbody");
+                    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+                    rows.sort((a, b) => {
+                        const aVal = a.cells[col]?.textContent.trim() || "";
+                        const bVal = b.cells[col]?.textContent.trim() || "";
+                        const result = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: "base" });
+                        return sortAsc ? result : -result;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
+
+        // --- TOAST ---
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toast-message");
+            if (!toast) return;
+            toastMsg.textContent = message;
+            toast.removeAttribute("hidden");
+            toast.classList.add("toast--visible");
+            setTimeout(() => {
+                toast.classList.remove("toast--visible");
+                toast.setAttribute("hidden", "");
+            }, 3000);
+        }
+
+    });
 
     // TEMA
     const themeBtn = document.getElementById("theme-toggle");

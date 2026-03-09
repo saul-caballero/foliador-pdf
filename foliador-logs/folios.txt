@@ -1,8 +1,0 @@
-2026-03-08 13:54:22 | SUCCESS | Folios: 0001 to 0007 | Pages: 7 | Corner: Abajo derecha | File: kyocera009965-1.pdf | Batch: Individual | Duration: 0.0s | IP: 127.0.0.1
-2026-03-08 13:54:32 | SUCCESS | Folios: 0001 to 0016 | Pages: 16 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_4.pdf | Batch: 7 | Duration: 0.3s | IP: 127.0.0.1
-2026-03-08 13:54:32 | SUCCESS | Folios: 0017 to 0029 | Pages: 13 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_5.pdf | Batch: 7 | Duration: 0.2s | IP: 127.0.0.1
-2026-03-08 13:54:32 | SUCCESS | Folios: 0030 to 0046 | Pages: 17 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_6.pdf | Batch: 7 | Duration: 0.3s | IP: 127.0.0.1
-2026-03-08 13:54:33 | SUCCESS | Folios: 0047 to 0059 | Pages: 13 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_7.pdf | Batch: 7 | Duration: 0.2s | IP: 127.0.0.1
-2026-03-08 13:54:33 | SUCCESS | Folios: 0060 to 0076 | Pages: 17 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_1.pdf | Batch: 7 | Duration: 0.3s | IP: 127.0.0.1
-2026-03-08 13:54:33 | SUCCESS | Folios: 0077 to 0088 | Pages: 12 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_2.pdf | Batch: 7 | Duration: 0.2s | IP: 127.0.0.1
-2026-03-08 13:54:34 | SUCCESS | Folios: 0089 to 0100 | Pages: 12 | Corner: Abajo derecha | File: Redes_de_Area_Local_Unidad_3.pdf | Batch: 7 | Duration: 0.2s | IP: 127.0.0.1

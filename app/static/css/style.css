@@ -731,6 +731,23 @@ label.btn--secondary input[type="file"] { display: none; }
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
 }
+.history__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px 0;
+}
+.history__pagination a.btn--secondary {
+    width: fit-content;
+    flex-shrink: 0;
+}
+.history__pagination-info {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
 
 /* Error Pages */
 .error-page {

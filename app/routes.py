@@ -276,12 +276,28 @@ def history():
         if e["pages"].replace("Pages: ", "").strip().isdigit()
     )
 
+    # Paginación
+    PER_PAGE = 100
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except ValueError:
+        page = 1
+
+    total_filtered = len(filtered)
+    total_pages_nav = (total_filtered + PER_PAGE - 1) // PER_PAGE
+    page = min(page, max(1, total_pages_nav))
+    start = (page - 1) * PER_PAGE
+    paginated = filtered[start:start + PER_PAGE]
+
     return render_template(
         "history.html",
-        entries=filtered,
+        entries=paginated,
         total_entries=len(entries),
         total_pages=total_pages,
         filters=request.args,
+        page=page,
+        total_pages_nav=total_pages_nav,
+        total_filtered=total_filtered,
     )
 
 
