@@ -8,7 +8,10 @@
             <h1 class="header__title">Foliador PDF - Servyre</h1>
             <p class="header__subtitle">Numeración automática de documentos para licitaciones</p>
         </div>
-        <a href="/" class="header__link">← Ir al Foliador</a>
+        <div class="header__links">
+            <a href="/" class="header__link">Ir al Foliador</a>
+            <button id="theme-toggle" class="header__link" type="button">☀️ Claro</button>
+        </div>
     </div>
 </header>
 
@@ -275,5 +278,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 });
+
+    // TEMA
+    const themeBtn = document.getElementById("theme-toggle");
+    if (localStorage.getItem("theme") === "light") {
+        themeBtn.textContent = "🌙 Oscuro";
+    }
+    themeBtn.addEventListener("click", () => {
+        const isLight = document.body.classList.toggle("theme--light");
+        themeBtn.textContent = isLight ? "🌙 Oscuro" : "☀️ Claro";
+        localStorage.setItem("theme", isLight ? "light" : "dark");
+    });
 </script>
+
 {% endblock %}

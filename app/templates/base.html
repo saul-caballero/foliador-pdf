@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Foliador PDF{% endblock %}</title>
-
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     {% block content %}{% endblock %}
-
     {% block scripts %}{% endblock %}
+    <script>
+        if (localStorage.getItem("theme") === "light") {
+            document.body.classList.add("theme--light");
+        }
+    </script>
 </body>
 </html>
