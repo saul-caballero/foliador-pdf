@@ -471,7 +471,8 @@ def foliar_multiple():
                 )
 
                 if success and os.path.exists(temp_out):
-                    zf.write(temp_out, f"Foliado_{safe_name}")
+                    file_number = str(files.index(file) + 1).zfill(3)
+                    zf.write(temp_out, f"{file_number}_Foliado_{safe_name}")
                     current_number += pages_to_folio
                 else:
                     errores.append(safe_name)
