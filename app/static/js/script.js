@@ -312,18 +312,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getPageCount(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const arr = new Uint8Array(e.target.result);
-                const text = new TextDecoder("latin1").decode(arr);
-                const matches = text.match(/\/Type\s*\/Page[^s]/g);
-                resolve(matches ? matches.length : "?");
-            };
-            reader.readAsArrayBuffer(file);
-        });
+        if (file._pages && file._pages !== "?") return Promise.resolve(file._pages);
+        
+        const formData = new FormData();
+        formData.append("pdf_file", file);
+        
+        return fetch("/page-count", { method: "POST", body: formData })
+            .then(r => r.json())
+            .then(data => {
+                const count = data.count ?? "?";
+                file._pages = count;
+                file._corrupt = count === null || count === "?";
+                return count;
+            })
+            .catch(() => {
+                file._pages = "?";
+                file._corrupt = true;
+                return "?";
+            });
     }
-
+    
     async function getStartFolioForIndex(index) {
         const startNumber = parseInt(startNumberInput.value) || 1;
         let accumulated = 0;

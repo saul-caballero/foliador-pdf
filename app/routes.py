@@ -496,6 +496,37 @@ def foliar_multiple():
         download_name="Foliados.zip",
     )
 
+@main.route("/page-count", methods=["POST"])
+def page_count():
+    file = request.files.get("pdf_file")
+    if not file:
+        return jsonify({"count": None}), 400
+
+    try:
+        file_id  = str(uuid.uuid4())
+        temp_in  = os.path.join(get_temp_folder(), f"pc_{file_id}.pdf")
+        file.save(temp_in)
+
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(temp_in)
+            count  = len(reader.pages)
+        except Exception:
+            from app.pdf_processor import sanitize_pdf
+            sanitized = temp_in.replace(".pdf", "_s.pdf")
+            if sanitize_pdf(temp_in, sanitized):
+                from pypdf import PdfReader
+                reader = PdfReader(sanitized)
+                count  = len(reader.pages)
+                os.remove(sanitized)
+            else:
+                count = None
+
+        os.remove(temp_in)
+        return jsonify({"count": count})
+
+    except Exception as e:
+        return jsonify({"count": None, "error": str(e)}), 500
 
 @main.app_errorhandler(404)
 def page_not_found(e):
