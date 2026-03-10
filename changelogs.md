@@ -4,6 +4,17 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 
 ---
 
+## [1.4.0] - 2026-03-10
+
+### Nuevo
+- Vista previa de última página con botones Primera/Última en el panel de vista previa
+- Versión centralizada en `__init__.py` via context processor — un solo lugar para actualizar
+- Validación de magic bytes - rechaza archivos que no son PDF reales aunque tengan extensión .pdf
+- Título de pestaña dinámico - muestra Procesando... y Listo según el estado
+- Validación de página inicial en tiempo real con aviso si supera el total de páginas del archivo
+- Contador de archivos en modal durante procesamiento ZIP
+- Archivos con error se listan en ERRORES.txt dentro del ZIP
+
 ## [1.3.1] - 2026-03-09
 
 ### Corregido
