@@ -235,6 +235,17 @@ def preview():
         temp_out = os.path.join(get_temp_folder(), f"prev_out_{file_id}.pdf")
 
         file.save(temp_in)
+
+        # Sanitizar si es necesario
+        try:
+            from pypdf import PdfReader
+            PdfReader(temp_in)
+        except Exception:
+            from app.pdf_processor import sanitize_pdf
+            sanitized = temp_in.replace(".pdf", "_sanitized.pdf")
+            if sanitize_pdf(temp_in, sanitized):
+                temp_in = sanitized
+
         params = parse_form_params(request.form, suffix="_prev")
         params["end_page"] = params["start_page"]
 
@@ -430,7 +441,17 @@ def foliar_multiple():
                         f.write(chunk)
 
                 from pypdf import PdfReader
-                reader         = PdfReader(temp_in)
+                from app.pdf_processor import sanitize_pdf
+                try:
+                    reader = PdfReader(temp_in)
+                except Exception:
+                    sanitized = temp_in.replace(".pdf", "_sanitized.pdf")
+                    if sanitize_pdf(temp_in, sanitized):
+                        reader = PdfReader(sanitized)
+                    else:
+                        errores.append(safe_name)
+                        continue
+
                 start_idx      = max(0, params["start_page"] - 1)
                 end_idx        = min(len(reader.pages), params["end_page"] if params["end_page"] else len(reader.pages))
                 pages_to_folio = end_idx - start_idx

@@ -7,6 +7,12 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 
+try:
+    import pikepdf
+    PIKEPDF_AVAILABLE = True
+except ImportError:
+    PIKEPDF_AVAILABLE = False
+
 
 def _log(folder, level, message):
     filename = "folios.txt" if level == "SUCCESS" else "errors.txt"
@@ -72,6 +78,18 @@ def _create_folio_overlay(page_width, page_height, folio_text,
     buffer.seek(0)
     return buffer
 
+def sanitize_pdf(input_path, output_path):
+    # Intentar reparar un PDF malformado usando pikepdf.
+    if not PIKEPDF_AVAILABLE:
+        return False
+    try:
+        with pikepdf.open(input_path, allow_overwriting_input=False) as pdf:
+            pdf.save(output_path)
+        return True
+    except Exception as e:
+        print(f"[pikepdf] No se pudo sanitizar: {e}")
+        return False
+
 
 def add_folios(input_path, output_path, log_folder,
                font="Courier-Bold", font_size=14, start_number=1,
@@ -82,7 +100,16 @@ def add_folios(input_path, output_path, log_folder,
     t_start = time.time()
 
     try:
-        reader = PdfReader(input_path)
+        try:
+            reader = PdfReader(input_path)
+        except Exception:
+            print("[WARNING] pypdf falló al leer, intentando sanitizar con pikepdf...")
+            sanitized_path = input_path.replace(".pdf", "_sanitized.pdf")
+            if sanitize_pdf(input_path, sanitized_path):
+                reader = PdfReader(sanitized_path)
+            else:
+                log_error(log_folder, "PDF malformado, no se pudo sanitizar", input_path)
+                return False
 
         if reader.is_encrypted:
             log_error(log_folder, "Encrypted PDF rejected", input_path)
