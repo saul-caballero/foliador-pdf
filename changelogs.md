@@ -4,6 +4,19 @@ Todos los cambios notables de este proyecto se documentan en este archivo.
 
 ---
 
+## [1.3.1] - 2026-03-09
+
+### Corregido
+- PDFs comprimidos o generados por herramientas externas (iLovePDF, PDF Tools) ahora se sanitizan automáticamente con pikepdf antes de foliar
+- Vista previa y conteo de páginas con fallback pikepdf para PDFs malformados
+- Archivos en ZIP ahora mantienen el orden definido por el usuario con prefijo numérico
+- File lock en borrado de historial para evitar desalineación con uso concurrente
+- Tiempo de limpieza de archivos temporales aumentado de 30 min a 2 horas
+- Nombres de archivo con caracteres especiales o muy largos ya no rompen el procesamiento
+- Mensaje de error específico cuando el rango de páginas es inválido
+- Mensajes de error traducidos al español
+
+
 ## [1.3.0] - 2026-03-09
 
 ### Agregado
