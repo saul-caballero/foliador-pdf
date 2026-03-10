@@ -101,6 +101,15 @@ document.addEventListener("DOMContentLoaded", () => {
         folioDisplay.textContent = `#${String(n).padStart(4, "0")}`;
     }
 
+    function setPageTitle(state) {
+        const titles = {
+            idle:       "Foliador PDF",
+            processing: "Procesando... - Foliador PDF",
+            done:       "Listo - Foliador PDF",
+        };
+        document.title = titles[state] || "Foliador PDF";
+    }
+
     function validateStartPage() {
         const startPageInput = document.getElementById("start_page");
         const warning = document.getElementById("start-page-warning");
