@@ -63,6 +63,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let loadedFiles = [];
     let toastCountdownInterval = null;
 
+    let currentPreviewPage = "first"; // "first" o "last"
+    const previewPageToggle  = document.getElementById("preview-page-toggle");
+    const previewFirstBtn    = document.getElementById("preview-first-btn");
+    const previewLastBtn     = document.getElementById("preview-last-btn");
+
     const controls = form.querySelectorAll(
         "input:not([type='hidden']):not(#pdf-file-input), select"
     );
@@ -94,6 +99,26 @@ document.addEventListener("DOMContentLoaded", () => {
             startNumberInput.value = 1;
         }
         folioDisplay.textContent = `#${String(n).padStart(4, "0")}`;
+    }
+
+    function validateStartPage() {
+        const startPageInput = document.getElementById("start_page");
+        const warning = document.getElementById("start-page-warning");
+        if (!startPageInput || !warning) return;
+
+        const startPage = parseInt(startPageInput.value) || 1;
+        const file = loadedFiles[currentPreviewIndex];
+        if (!file || !file._pages || file._pages === "?") {
+            warning.hidden = true;
+            return;
+        }
+
+        if (startPage > file._pages) {
+            warning.textContent = `⚠ La página inicial (${startPage}) es mayor que el total de páginas del archivo (${file._pages}).`;
+            warning.hidden = false;
+        } else {
+            warning.hidden = true;
+        }
     }
 
     async function updateFolioRange() {
@@ -177,9 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMessage.textContent = "Sube un PDF para ver la vista previa de la primera página.";
         previewMessage.hidden = false;
         previewFilename.hidden = true;
+        previewPageToggle.hidden = true;
         screenUpload.hidden = false;
         screenConfig.hidden = true;
         clearAllBtn.hidden = true;
+        setPageTitle("idle");
     }
 
     // Toast con contador regresivo y botón "Foliar de nuevo"
@@ -290,8 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function goToPreview(index) {
         currentPreviewIndex = index;
+        currentPreviewPage = "first";
+        previewFirstBtn.classList.add("preview-page-toggle__btn--active");
+        previewLastBtn.classList.remove("preview-page-toggle__btn--active");
         previewFilename.textContent = loadedFiles[index].name;
         previewFilename.hidden = false;
+        previewPageToggle.hidden = false;
         syncFileInput(loadedFiles[index]);
         updateCarousel();
         renderFileList();
@@ -490,6 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fileInput.dispatchEvent(new Event("change", { bubbles: true }));
             previewFilename.textContent = loadedFiles[0].name;
             previewFilename.hidden = false;
+            previewPageToggle.hidden = false;
             updateFolioRange();
         }, 300);
     }
@@ -510,17 +542,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const formData = new FormData();
             const folioForThisFile = await getStartFolioForIndex(currentPreviewIndex);
+            const file = loadedFiles[currentPreviewIndex];
+            const totalPages = file?._pages;
+
+            let previewPage = 1;
+            let folioForPreview = folioForThisFile;
+            if (currentPreviewPage === "last" && typeof totalPages === "number") {
+                previewPage = totalPages;
+                folioForPreview = folioForThisFile + totalPages - 1;
+            }
 
             formData.append("pdf_file", fileInput.files[0]);
             controls.forEach(ctrl => {
                 if (ctrl.name === "start_number") {
-                    formData.append(`${ctrl.name}_prev`, folioForThisFile);
+                    formData.append(`${ctrl.name}_prev`, folioForPreview);
+                } else if (ctrl.name === "start_page") {
+                    formData.append(`${ctrl.name}_prev`, previewPage);
                 } else {
                     formData.append(`${ctrl.name}_prev`, ctrl.value);
                 }
             });
 
-            folioDisplay.textContent = `#${String(folioForThisFile).padStart(4, "0")}`;
+            folioDisplay.textContent = `#${String(folioForPreview).padStart(4, "0")}`;
 
             try {
                 const response = await fetch("/preview", { method: "POST", body: formData });
@@ -551,6 +594,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function processUpload() {
         confirmModal.hidden = true;
         loadingModal.hidden = false;
+        setPageTitle("processing");
+        const zipProgressText = document.getElementById("zip-progress-text");
+        if (loadedFiles.length > 1 && zipProgressText) {
+            zipProgressText.textContent = `Procesando ${loadedFiles.length} archivos... esto puede tardar unos momentos.`;
+            zipProgressText.hidden = false;
+        } else if (zipProgressText) {
+            zipProgressText.hidden = true;
+        }
         progressBar.style.width = "0%";
         progressText.textContent = "0%";
 
@@ -585,7 +636,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    showToast("✓ PDF listo");
+                    showToast("PDF listo");
+                    setPageTitle("done");
                 } else {
                     alert(`Error ${xhr.status} al procesar el archivo.`);
                     window.location.reload();
@@ -630,7 +682,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    showToast(`✓ ZIP listo (${loadedFiles.length} archivos)`);
+                    showToast(`ZIP listo (${loadedFiles.length} archivos)`);
+                    setPageTitle("done");
                 } else {
                     alert(`Error ${xhr.status} al procesar los archivos.`);
                     window.location.reload();
@@ -672,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctrl.addEventListener("change", requestPreview);
         ctrl.addEventListener("change", updateFolioDisplay);
         ctrl.addEventListener("change", saveConfig);
-        // Actualizar iconito de esquina en tiempo real al cambiar el select
+        // Actualizar icono de esquina en tiempo real al cambiar el select
         if (ctrl.name === "corner") {
             ctrl.addEventListener("change", renderFileList);
         }
@@ -681,6 +734,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ctrl.addEventListener("input", updateFolioDisplay);
             ctrl.addEventListener("input", saveConfig);
             ctrl.addEventListener("input", updateFolioRange);
+            ctrl.addEventListener("input", validateStartPage);
         }
     });
 
@@ -810,6 +864,20 @@ document.addEventListener("DOMContentLoaded", () => {
     onboardingSkip.addEventListener("click", () => {
         localStorage.setItem("onboarding-seen", "1");
         onboardingModal.hidden = true;
+    });
+
+    previewFirstBtn.addEventListener("click", () => {
+        currentPreviewPage = "first";
+        previewFirstBtn.classList.add("preview-page-toggle__btn--active");
+        previewLastBtn.classList.remove("preview-page-toggle__btn--active");
+        requestPreview();
+    });
+
+    previewLastBtn.addEventListener("click", () => {
+        currentPreviewPage = "last";
+        previewLastBtn.classList.add("preview-page-toggle__btn--active");
+        previewFirstBtn.classList.remove("preview-page-toggle__btn--active");
+        requestPreview();
     });
 
     updateSubmitState();

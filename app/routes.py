@@ -60,6 +60,12 @@ def cleanup_temp_files(temp_folder, max_age_minutes=120):
         except OSError:
             pass
 
+def is_valid_pdf(path):
+    try:
+        with open(path, "rb") as f:
+            return f.read(4) == b"%PDF"
+    except OSError:
+        return False
 
 def parse_form_params(form, suffix=""):
     def field(name):
@@ -238,6 +244,9 @@ def preview():
         temp_out = os.path.join(get_temp_folder(), f"prev_out_{file_id}.pdf")
 
         file.save(temp_in)
+
+        if not is_valid_pdf(temp_in):
+            return "El archivo no es un PDF válido.", 400
 
         # Sanitizar si es necesario
         try:
@@ -446,6 +455,10 @@ def foliar_multiple():
                     while chunk := file.read(8192):
                         f.write(chunk)
 
+                if not is_valid_pdf(temp_in):
+                    errores.append(safe_name)
+                    continue
+
                 from pypdf import PdfReader
                 from app.pdf_processor import sanitize_pdf
                 try:
@@ -494,6 +507,11 @@ def foliar_multiple():
                             os.remove(path)
                         except OSError:
                             pass
+
+        if errores:
+            error_content = "Los siguientes archivos no pudieron ser foliados:\n\n"
+            error_content += "\n".join(f"- {e}" for e in errores)
+            zf.writestr("ERRORES.txt", error_content)
 
     zip_buffer.seek(0)
     return send_file(

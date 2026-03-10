@@ -52,8 +52,8 @@
             </button>
             <div id="sort-controls" class="sort-controls" hidden>
                 <span class="sort-controls__label">Ordenar:</span>
-                <button type="button" id="sort-az" class="sort-btn">A → Z</button>
-                <button type="button" id="sort-za" class="sort-btn">Z → A</button>
+                <button type="button" id="sort-az" class="sort-btn">A - Z</button>
+                <button type="button" id="sort-za" class="sort-btn">Z - A</button>
             </div>
             <div id="file-list" class="file-list" hidden></div>
 
@@ -71,7 +71,7 @@
                         </label>
                         <input class="field__input" type="number" id="start_number" name="start_number" value="1"
                             min="1" required>
-                        <span class="field__hint">Formato 4 dígitos - ej: 1 → 0001</span>
+                        <span class="field__hint">Formato 4 dígitos - ej: 1 es 0001</span>
                     </div>
 
                     <div id="folio-range-display" class="folio-range" hidden>
@@ -85,9 +85,9 @@
                                 Página inicial
                                 <button type="button" class="field__info" data-hint="start_page">?</button>
                             </label>
-                            <input class="field__input" type="number" id="start_page" name="start_page" value="1"
-                                min="1">
+                            <input class="field__input" type="number" id="start_page" name="start_page" value="1" min="1">
                             <span class="field__hint">1 para foliar desde el inicio</span>
+                            <span id="start-page-warning" class="field__warning" hidden></span>
                         </div>
                         <div class="field">
                             <label class="field__label" for="end_page">
@@ -177,6 +177,10 @@
                     <button type="button" id="carousel-next" class="carousel__btn">&#8250;</button>
                 </div>
                 <p id="preview-filename" class="preview-panel__filename" hidden></p>
+                <div id="preview-page-toggle" class="preview-page-toggle" hidden>
+                    <button type="button" id="preview-first-btn" class="preview-page-toggle__btn preview-page-toggle__btn--active">Primera página</button>
+                    <button type="button" id="preview-last-btn" class="preview-page-toggle__btn">Última página</button>
+                </div>
                 <div class="preview-panel__canvas" id="preview-container">
                     <p id="preview-message" class="preview-panel__message">
                         Sube un PDF para ver la vista previa de la primera página.
@@ -204,6 +208,7 @@
     <div class="modal__box">
         <h3 class="modal__title">Procesando archivo...</h3>
         <p class="modal__body">Por favor espera. Los archivos grandes pueden tardar varios segundos.</p>
+        <p id="zip-progress-text" class="modal__body" hidden></p>
         <div class="progress">
             <div id="progress-bar" class="progress__bar"></div>
             <span id="progress-text" class="progress__text">0%</span>
