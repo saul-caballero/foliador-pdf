@@ -126,7 +126,7 @@ def add_folios(input_path, output_path, log_folder,
         count = len(pages_to_folio)
 
         if count <= 0 and not preview_mode:
-            raise ValueError("Page range is invalid or out of bounds.")
+            raise ValueError(f"La página inicial ({start_page}) es mayor que el total de páginas del PDF ({total}).")
 
         if not preview_mode:
             for page in pages_before:

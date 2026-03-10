@@ -4,6 +4,8 @@ import csv
 import uuid
 import time
 import zipfile
+import threading
+_log_lock = threading.Lock()
 from datetime import datetime
 from flask import (
     Blueprint, render_template, request,
@@ -45,7 +47,7 @@ def get_log_path():
     return os.path.join(current_app.config["LOGS_FOLDER"], "folios.txt")
 
 
-def cleanup_temp_files(temp_folder, max_age_minutes=30):
+def cleanup_temp_files(temp_folder, max_age_minutes=120):
     if not os.path.exists(temp_folder):
         return
     now = time.time()
@@ -171,7 +173,8 @@ def index():
 
         try:
             file_id   = str(uuid.uuid4())
-            safe_name = secure_filename(file.filename)
+            safe_name = secure_filename(file.filename) or f"documento_{uuid.uuid4().hex[:8]}.pdf"
+            safe_name = safe_name[:100]
             temp_in   = os.path.join(get_temp_folder(), f"{file_id}_in.pdf")
             temp_out  = os.path.join(get_temp_folder(), f"{file_id}_out.pdf")
 
@@ -200,10 +203,10 @@ def index():
                     download_name=f"Foliado_{safe_name}",
                 )
 
-            flash("Error processing the document.", "error")
+            flash("Error al procesar el documento. Verifica que el rango de páginas sea válido.", "error")
 
         except Exception as e:
-            flash(f"Unexpected error: {str(e)}", "error")
+            flash(f"Error inesperado: {str(e)}", "error")
 
         return redirect(url_for("main.index"))
 
@@ -217,17 +220,17 @@ def index():
 @main.route("/preview", methods=["POST"])
 def preview():
     if not PDF_PREVIEW_AVAILABLE:
-        return "Preview unavailable.", 501
+        return "Vist previa no disponible.", 501
 
     file = request.files.get("pdf_file")
     if not file:
-        return "No file received.", 400
+        return "No se recibió ningún archivo.", 400
 
     file.seek(0, os.SEEK_END)
     size_mb = file.tell() / (1024 * 1024)
     file.seek(0)
     if size_mb > 30:
-        return "File too large for preview.", 413
+        return "Archivo demasiado grande para vista previa (máximo 30MB)", 413
 
     try:
         file_id  = str(uuid.uuid4())
@@ -268,7 +271,7 @@ def preview():
         return send_file(img_io, mimetype="image/png")
 
     except Exception as e:
-        return f"Preview error: {str(e)}", 500
+        return f"Error al generar vista previa: {str(e)}", 500
 
 
 @main.route("/instructions")
@@ -318,16 +321,17 @@ def history_delete_entry(line_index):
     if not os.path.exists(log_path):
         return jsonify({"ok": False, "error": "Log not found"}), 404
 
-    with open(log_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    with _log_lock:
+        with open(log_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
 
-    if line_index < 0 or line_index >= len(lines):
-        return jsonify({"ok": False, "error": "Index out of range"}), 400
+        if line_index < 0 or line_index >= len(lines):
+            return jsonify({"ok": False, "error": "Index out of range"}), 400
 
-    lines.pop(line_index)
+        lines.pop(line_index)
 
-    with open(log_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
 
     return jsonify({"ok": True})
 
@@ -335,9 +339,10 @@ def history_delete_entry(line_index):
 @main.route("/history/delete-all", methods=["POST"])
 def history_delete_all():
     log_path = get_log_path()
-    if os.path.exists(log_path):
-        with open(log_path, "w", encoding="utf-8") as f:
-            f.write("")
+    with _log_lock:
+        if os.path.exists(log_path):
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("")
     return redirect(url_for("main.history"))
 
 
@@ -431,7 +436,8 @@ def foliar_multiple():
                 continue
 
             file_id   = str(uuid.uuid4())
-            safe_name = secure_filename(file.filename)
+            safe_name = secure_filename(file.filename) or f"documento_{uuid.uuid4().hex[:8]}.pdf"
+            safe_name = safe_name[:100]
             temp_in   = os.path.join(temp_folder, f"{file_id}_in.pdf")
             temp_out  = os.path.join(temp_folder, f"{file_id}_out.pdf")
 
