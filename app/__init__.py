@@ -3,12 +3,12 @@ import sys
 import uuid
 from flask import Flask
 
+APP_VERSION = "1.4.0"
 
 def create_app(base_path=None, exe_path=None):
     exe_path = os.environ.get("EXE_PATH")
     data_path = exe_path if exe_path else base_path
 
-    # Crear y configurar la aplicación Flask 
     if base_path is None:
         base_path = os.path.dirname(os.path.abspath(__file__))
         template_folder = os.path.join(base_path, "templates")
@@ -17,7 +17,6 @@ def create_app(base_path=None, exe_path=None):
         template_folder = os.path.join(base_path, "app", "templates")
         static_folder = os.path.join(base_path, "app", "static")
 
-    # logs junto al .exe, temp_files dentro del sistema temporal
     data_path = exe_path if exe_path else base_path
 
     app = Flask(
@@ -37,5 +36,9 @@ def create_app(base_path=None, exe_path=None):
 
     from app.routes import main
     app.register_blueprint(main)
+
+    @app.context_processor
+    def inject_version():
+        return {"app_version": APP_VERSION}
 
     return app
